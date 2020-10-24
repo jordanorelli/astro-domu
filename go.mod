@@ -10,6 +10,7 @@ require (
 	github.com/fatih/motion v1.1.0 // indirect
 	github.com/gdamore/tcell/v2 v2.0.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/jordanorelli/blammo v0.0.0-20200201231725-9fd70eb7c1f2
 	github.com/josharian/impl v1.0.0 // indirect
 	github.com/jstemmer/gotags v1.4.1 // indirect
 	github.com/keegancsmith/rpc v1.3.0 // indirect
