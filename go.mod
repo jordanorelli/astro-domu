@@ -19,6 +19,7 @@ require (
 	github.com/koron/iferr v0.0.0-20180615142939-bb332a3b1d91 // indirect
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
+	github.com/prometheus/common v0.14.0
 	github.com/stamblerre/gocode v1.0.0 // indirect
 	github.com/zmb3/gogetdoc v0.0.0-20190228002656-b37376c5da6a // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
