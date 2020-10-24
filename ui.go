@@ -69,6 +69,16 @@ func (ui *ui) menu() {
 	ui.writeString(0, height-1, "fart", tcell.StyleDefault)
 	ui.screen.Sync()
 
+	type point struct{ x, y int }
+	position := point{10, 10}
+
+	redraw := func() {
+		ui.screen.Clear()
+		ui.screen.SetContent(position.x, position.y, '+', nil, tcell.StyleDefault)
+		ui.screen.Show()
+	}
+	redraw()
+
 	for {
 		e := ui.screen.PollEvent()
 		if e == nil {
@@ -80,6 +90,22 @@ func (ui *ui) menu() {
 			key := v.Key()
 			if key == tcell.KeyCtrlC {
 				return
+			}
+			if key == tcell.KeyRune {
+				switch v.Rune() {
+				case 'w':
+					position.y--
+					redraw()
+				case 'a':
+					position.x--
+					redraw()
+				case 's':
+					position.y++
+					redraw()
+				case 'd':
+					position.x++
+					redraw()
+				}
 			}
 		default:
 			log.Debug("screen saw unhandled event of type %T", e)
