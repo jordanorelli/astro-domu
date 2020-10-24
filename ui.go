@@ -12,6 +12,7 @@ import (
 // ui represents our terminal-based user interface
 type ui struct {
 	*blammo.Log
+	screen tcell.Screen
 }
 
 func (ui *ui) run() {
@@ -19,6 +20,7 @@ func (ui *ui) run() {
 	if err != nil {
 		exit.WithMessage(1, "unable to create a screen: %v", err)
 	}
+	ui.screen = screen
 	log.Debug("sceen created")
 
 	if err := screen.Init(); err != nil {
@@ -36,9 +38,39 @@ func (ui *ui) run() {
 		screen.Fini()
 	}()
 
+	ui.menu()
 	log.Debug("clearing screen")
+	screen.Clear()
+
+	time.Sleep(1 * time.Second)
+
+}
+
+// writeString writes a string in the given style from left to right beginning
+// at the location (x, y). Writing of the screen just fails silently so don't
+// do that.
+func (ui *ui) writeString(x, y int, s string, style tcell.Style) {
+	width, height := ui.screen.Size()
+	if y > height {
+		return
+	}
+	for i, r := range []rune(s) {
+		x := x + i
+		if x > width {
+			return
+		}
+		ui.screen.SetContent(x, y, r, nil, style)
+	}
+}
+
+func (ui *ui) menu() {
+	ui.screen.Clear()
+	_, height := ui.screen.Size()
+	ui.writeString(0, height-1, "fart", tcell.StyleDefault)
+	ui.screen.Sync()
+
 	for {
-		e := screen.PollEvent()
+		e := ui.screen.PollEvent()
 		if e == nil {
 			break
 		}
@@ -53,8 +85,4 @@ func (ui *ui) run() {
 			log.Debug("screen saw unhandled event of type %T", e)
 		}
 	}
-	screen.Clear()
-
-	time.Sleep(1 * time.Second)
-
 }
