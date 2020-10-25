@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"time"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/belt-mud/internal/exit"
 	"github.com/jordanorelli/blammo"
@@ -11,15 +14,25 @@ type ui struct {
 	*blammo.Log
 	screen tcell.Screen
 	mode   uiMode
+	client *client
 }
 
 func (ui *ui) run() {
-	c := client{
+	ui.client = &client{
 		Log:  ui.Child("client"),
 		host: "127.0.0.1",
 		port: 12805,
 	}
-	go c.run()
+	ctx := context.Background()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer func() {
+		ui.Debug("canceling client context")
+		cancel()
+		time.Sleep(time.Second)
+	}()
+
+	go ui.client.run(ctx)
 
 	screen, err := tcell.NewScreen()
 	if err != nil {
@@ -90,7 +103,6 @@ func (ui *ui) menu() {
 		}
 
 		ui.mode.HandleEvent(e)
-
 		ui.screen.Clear()
 		ui.mode.draw(ui)
 		ui.screen.Show()
