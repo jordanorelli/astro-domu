@@ -18,11 +18,11 @@ type client struct {
 	port    int
 	lastSeq int
 	conn    *websocket.Conn
-	outbox  chan request
+	outbox  chan requestBody
 }
 
 func (c *client) run(ctx context.Context) {
-	c.outbox = make(chan request)
+	c.outbox = make(chan requestBody)
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: 3 * time.Second,
@@ -114,7 +114,7 @@ func (c *client) send(cmd string, args map[string]interface{}) {
 		eargs[k] = json.RawMessage(b)
 	}
 	c.lastSeq++
-	req := request{
+	req := requestBody{
 		Seq:     c.lastSeq,
 		Command: cmd,
 		Args:    eargs,

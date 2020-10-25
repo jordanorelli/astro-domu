@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -44,6 +45,11 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			s.Info("received: %s", text)
+			var body requestBody
+			if err := json.Unmarshal(text, &body); err != nil {
+				s.Error("unable to parse request: %v", err)
+				break
+			}
 		case websocket.BinaryMessage:
 
 		}

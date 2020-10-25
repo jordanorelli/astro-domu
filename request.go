@@ -2,7 +2,9 @@ package main
 
 import "encoding/json"
 
-type request struct {
+// requestBody is a container structure that contains the data of a user
+// request. This is what clients serialize directly.
+type requestBody struct {
 	// client-side sequence number. Clients are expected to send requests with
 	// a monotonically-incrementing sequence number.
 	Seq int `json:"seq"`
@@ -14,4 +16,8 @@ type request struct {
 	// args are the arguments passed to the command for parameterized commands
 	// executed on the server.
 	Args map[string]json.RawMessage `json:"args"`
+}
+
+type request struct {
+	body requestBody
 }
