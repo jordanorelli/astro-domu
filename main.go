@@ -26,7 +26,21 @@ func newLog(path string) *blammo.Log {
 }
 
 func main() {
-	log := newLog("./belt.log")
+	if len(os.Args) < 2 {
+		exit.WithMessage(1, "client or server?")
+	}
+
+	switch os.Args[1] {
+	case "client":
+		client()
+	default:
+		exit.WithMessage(1, "supported options are [client|server]")
+	}
+
+}
+
+func client() {
+	log := newLog("./belt.log").Child("client")
 
 	start := time.Now()
 	log.Info("starting at: %v", start)
@@ -41,3 +55,16 @@ func main() {
 	}
 	ui.run()
 }
+
+// func server() {
+// 	stdout := blammo.NewLineWriter(os.Stdout)
+// 	stderr := blammo.NewLineWriter(os.Stderr)
+//
+// 	options := []blammo.Option{
+// 		blammo.DebugWriter(stdout),
+// 		blammo.InfoWriter(stdout),
+// 		blammo.ErrorWriter(stderr),
+// 	}
+//
+// 	return blammo.NewLog("belt", options...).Child("server")
+// }
