@@ -32,14 +32,28 @@ func main() {
 
 	switch os.Args[1] {
 	case "client":
-		client()
+		runClient()
+	case "server":
+		stdout := blammo.NewLineWriter(os.Stdout)
+		stderr := blammo.NewLineWriter(os.Stderr)
+
+		options := []blammo.Option{
+			blammo.DebugWriter(stdout),
+			blammo.InfoWriter(stdout),
+			blammo.ErrorWriter(stderr),
+		}
+
+		log := blammo.NewLog("belt", options...).Child("server")
+		s := server{Log: log, host: "127.0.0.1", port: 12805}
+		err := s.listen()
+		log.Error("listen error: %v", err)
 	default:
 		exit.WithMessage(1, "supported options are [client|server]")
 	}
 
 }
 
-func client() {
+func runClient() {
 	log := newLog("./belt.log").Child("client")
 
 	start := time.Now()
@@ -55,16 +69,3 @@ func client() {
 	}
 	ui.run()
 }
-
-// func server() {
-// 	stdout := blammo.NewLineWriter(os.Stdout)
-// 	stderr := blammo.NewLineWriter(os.Stderr)
-//
-// 	options := []blammo.Option{
-// 		blammo.DebugWriter(stdout),
-// 		blammo.InfoWriter(stdout),
-// 		blammo.ErrorWriter(stderr),
-// 	}
-//
-// 	return blammo.NewLog("belt", options...).Child("server")
-// }

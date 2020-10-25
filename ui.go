@@ -14,6 +14,13 @@ type ui struct {
 }
 
 func (ui *ui) run() {
+	c := client{
+		Log:  ui.Child("client"),
+		host: "127.0.0.1",
+		port: 12805,
+	}
+	go c.run()
+
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		exit.WithMessage(1, "unable to create a screen: %v", err)
