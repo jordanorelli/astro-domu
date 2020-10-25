@@ -1,4 +1,4 @@
-module github.com/jordanorelli/belt-mud
+module github.com/jordanorelli/astro-domu
 
 go 1.14
 

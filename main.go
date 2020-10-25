@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jordanorelli/belt-mud/internal/exit"
+	"github.com/jordanorelli/astro-domu/internal/exit"
 	"github.com/jordanorelli/blammo"
 )
 
