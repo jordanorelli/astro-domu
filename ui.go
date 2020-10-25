@@ -36,7 +36,10 @@ func (ui *ui) run() {
 		screen.Fini()
 	}()
 
-	ui.mode = &boxWalker{}
+	ui.mode = &boxWalker{
+		width:  10,
+		height: 6,
+	}
 	ui.menu()
 	ui.Debug("clearing screen")
 	screen.Clear()

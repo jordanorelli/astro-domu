@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -24,13 +22,13 @@ func (m *boxWalker) HandleEvent(e tcell.Event) bool {
 		if key == tcell.KeyRune {
 			switch v.Rune() {
 			case 'w':
-				m.position.y--
+				m.move(0, -1)
 			case 'a':
-				m.position.x--
+				m.move(-1, 0)
 			case 's':
-				m.position.y++
+				m.move(0, 1)
 			case 'd':
-				m.position.x++
+				m.move(1, 0)
 			}
 		}
 	default:
@@ -39,30 +37,35 @@ func (m *boxWalker) HandleEvent(e tcell.Event) bool {
 	return true
 }
 
+func (m *boxWalker) move(dx, dy int) {
+	m.position.x = clamp(m.position.x+dx, 0, m.width-1)
+	m.position.y = clamp(m.position.y+dy, 0, m.height-1)
+}
+
 func (m *boxWalker) draw(ui *ui) {
-	if m.position.x < 2 {
-		m.position.x = 2
+	offset := point{1, 1}
+
+	// fill in background dots first
+	for x := 0; x < m.width; x++ {
+		for y := 0; y < m.height; y++ {
+			ui.screen.SetContent(x+offset.x, y+offset.y, '·', nil, tcell.StyleDefault)
+		}
 	}
-	if m.position.x > 11 {
-		m.position.x = 11
+
+	// frame it
+	ui.screen.SetContent(offset.x-1, offset.y-1, '┌', nil, tcell.StyleDefault)
+	ui.screen.SetContent(offset.x+m.width, offset.y-1, '┐', nil, tcell.StyleDefault)
+	ui.screen.SetContent(offset.x-1, offset.y+m.height, '└', nil, tcell.StyleDefault)
+	ui.screen.SetContent(offset.x+m.width, offset.y+m.height, '┘', nil, tcell.StyleDefault)
+	for x := 0; x < m.width; x++ {
+		ui.screen.SetContent(x+offset.x, offset.y-1, '─', nil, tcell.StyleDefault)
+		ui.screen.SetContent(x+offset.x, offset.y+m.height, '─', nil, tcell.StyleDefault)
 	}
-	if m.position.y < 2 {
-		m.position.y = 2
+	for y := 0; y < m.height; y++ {
+		ui.screen.SetContent(offset.x-1, y+offset.y, '│', nil, tcell.StyleDefault)
+		ui.screen.SetContent(offset.x+m.width, y+offset.y, '│', nil, tcell.StyleDefault)
 	}
-	if m.position.y > 10 {
-		m.position.y = 10
-	}
-	ui.writeString(1, 1, `┌──────────┐`, tcell.StyleDefault)
-	ui.writeString(1, 2, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 3, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 4, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 5, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 6, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 7, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 8, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 9, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 10, `│··········│`, tcell.StyleDefault)
-	ui.writeString(1, 11, `└──────────┘`, tcell.StyleDefault)
-	ui.screen.SetContent(m.position.x, m.position.y, '@', nil, tcell.StyleDefault)
-	ui.writeString(0, 12, fmt.Sprintf(" (%02d, %02d)", m.position.x, m.position.y), tcell.StyleDefault)
+
+	// add all characters
+	ui.screen.SetContent(m.position.x+offset.x, m.position.y+offset.y, '@', nil, tcell.StyleDefault)
 }
