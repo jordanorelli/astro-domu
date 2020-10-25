@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"strings"
 	"time"
@@ -43,14 +44,12 @@ func (c *client) run(ctx context.Context) {
 		return
 	}
 	c.conn = conn
+	go c.readLoop()
 
 	c.Debug("dial response status: %d", res.StatusCode)
 	for k, vals := range res.Header {
 		c.Debug("dial response header: %s = %s", k, strings.Join(vals, ","))
 	}
-
-	tick := time.NewTicker(time.Second)
-	defer tick.Stop()
 
 	for {
 		select {
@@ -67,25 +66,15 @@ func (c *client) run(ctx context.Context) {
 				break
 			}
 
-			n, err := w.Write(payload)
-			if err != nil {
+			if _, err := w.Write(payload); err != nil {
 				c.Error("failed to write payload of length %d: %v", len(payload), err)
 				break
 			}
-			c.Info("wrote %d bytes for payload of length %d", n, len(payload))
+			c.Child("sent-frame").Info(string(payload))
 
 			if err := w.Close(); err != nil {
 				c.Error("failed to close websocket write frame: %v", err)
 			}
-		case <-tick.C:
-			w, err := conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				c.Error("unable to get a websocket frame writer: %v", err)
-				break
-			}
-
-			w.Write([]byte("hey"))
-			w.Close()
 		case <-ctx.Done():
 			c.Info("parent context done, sending close message")
 			msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
@@ -120,4 +109,18 @@ func (c *client) send(cmd string, args map[string]interface{}) {
 		Args:    eargs,
 	}
 	c.outbox <- req
+}
+
+func (c *client) readLoop() {
+	for {
+		_, r, err := c.conn.NextReader()
+		if err != nil {
+			return
+		}
+		b, err := ioutil.ReadAll(r)
+		if err != nil {
+			return
+		}
+		c.Log.Child("received-frame").Info(string(b))
+	}
 }

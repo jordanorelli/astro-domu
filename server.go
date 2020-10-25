@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 	"github.com/jordanorelli/blammo"
@@ -12,9 +14,10 @@ import (
 
 type server struct {
 	*blammo.Log
-	host  string
-	port  int
-	world *room
+	host          string
+	port          int
+	world         *room
+	lastSessionID int
 }
 
 func (s *server) listen() error {
@@ -30,6 +33,18 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	s.lastSessionID++
+	sn := session{
+		Log:    s.Log.Child("sessions").Child(strconv.Itoa(s.lastSessionID)),
+		id:     s.lastSessionID,
+		conn:   conn,
+		outbox: make(chan response),
+	}
+	go sn.pump(ctx)
+
 	for {
 		t, r, err := conn.NextReader()
 		if err != nil {
@@ -44,14 +59,16 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				s.Error("readall error: %v", err)
 				break
 			}
-			s.Info("received: %s", text)
+			sn.Log.Child("received-frame").Info(string(text))
 			var body requestBody
 			if err := json.Unmarshal(text, &body); err != nil {
 				s.Error("unable to parse request: %v", err)
+				sn.outbox <- errorResponse(0, fmt.Errorf("unable to parse request: %v", err))
 				break
 			}
+			sn.outbox <- ok(body.Seq)
 		case websocket.BinaryMessage:
-
+			sn.outbox <- errorResponse(0, fmt.Errorf("unable to parse binary frames"))
 		}
 	}
 }
