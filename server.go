@@ -16,7 +16,6 @@ type server struct {
 	*blammo.Log
 	host          string
 	port          int
-	world         *room
 	lastSessionID int
 }
 

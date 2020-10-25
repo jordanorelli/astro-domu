@@ -9,7 +9,7 @@ import (
 )
 
 func newLog(path string) *blammo.Log {
-	f, err := os.OpenFile("./belt.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile("./astro.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		exit.WithMessage(1, "unable to open log file %q for writing: %v", err)
 	}
@@ -22,7 +22,7 @@ func newLog(path string) *blammo.Log {
 		blammo.ErrorWriter(w),
 	}
 
-	return blammo.NewLog("belt", options...)
+	return blammo.NewLog("astro", options...)
 }
 
 func main() {
@@ -43,7 +43,7 @@ func main() {
 			blammo.ErrorWriter(stderr),
 		}
 
-		log := blammo.NewLog("belt", options...).Child("server")
+		log := blammo.NewLog("astro", options...).Child("server")
 		s := server{Log: log, host: "127.0.0.1", port: 12805}
 		err := s.listen()
 		log.Error("listen error: %v", err)
@@ -54,7 +54,7 @@ func main() {
 }
 
 func runClient() {
-	log := newLog("./belt.log").Child("client")
+	log := newLog("./astro.log").Child("client")
 
 	start := time.Now()
 	log.Info("starting at: %v", start)
