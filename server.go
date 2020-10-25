@@ -11,8 +11,9 @@ import (
 
 type server struct {
 	*blammo.Log
-	host string
-	port int
+	host  string
+	port  int
+	world *room
 }
 
 func (s *server) listen() error {

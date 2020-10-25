@@ -102,7 +102,7 @@ func (ui *ui) menu() {
 			}
 		}
 
-		ui.mode.HandleEvent(e)
+		ui.mode.handleEvent(ui, e)
 		ui.screen.Clear()
 		ui.mode.draw(ui)
 		ui.screen.Show()

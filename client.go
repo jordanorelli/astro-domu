@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -13,11 +14,16 @@ import (
 
 type client struct {
 	*blammo.Log
-	host string
-	port int
+	host    string
+	port    int
+	lastSeq int
+	conn    *websocket.Conn
+	outbox  chan request
 }
 
 func (c *client) run(ctx context.Context) {
+	c.outbox = make(chan request)
+
 	dialer := websocket.Dialer{
 		HandshakeTimeout: 3 * time.Second,
 		ReadBufferSize:   32 * 1024,
@@ -36,6 +42,7 @@ func (c *client) run(ctx context.Context) {
 		c.Error("dial error: %v", err)
 		return
 	}
+	c.conn = conn
 
 	c.Debug("dial response status: %d", res.StatusCode)
 	for k, vals := range res.Header {
@@ -47,6 +54,29 @@ func (c *client) run(ctx context.Context) {
 
 	for {
 		select {
+		case req := <-c.outbox:
+			payload, err := json.Marshal(req)
+			if err != nil {
+				c.Error("unable to marshal a request: %v", err)
+				break
+			}
+
+			w, err := conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				c.Error("unable to get a websocket frame writer: %v", err)
+				break
+			}
+
+			n, err := w.Write(payload)
+			if err != nil {
+				c.Error("failed to write payload of length %d: %v", len(payload), err)
+				break
+			}
+			c.Info("wrote %d bytes for payload of length %d", n, len(payload))
+
+			if err := w.Close(); err != nil {
+				c.Error("failed to close websocket write frame: %v", err)
+			}
 		case <-tick.C:
 			w, err := conn.NextWriter(websocket.TextMessage)
 			if err != nil {
@@ -67,7 +97,27 @@ func (c *client) run(ctx context.Context) {
 				c.Error("failed to close connection: %v", err)
 			}
 			c.Info("connection closed")
+			c.conn = nil
 			return
 		}
 	}
+}
+
+func (c *client) send(cmd string, args map[string]interface{}) {
+	eargs := make(map[string]json.RawMessage, len(args))
+	for k, v := range args {
+		b, err := json.Marshal(v)
+		if err != nil {
+			c.Error("failed to marshal an argument: %v", err)
+			return
+		}
+		eargs[k] = json.RawMessage(b)
+	}
+	c.lastSeq++
+	req := request{
+		Seq:     c.lastSeq,
+		Command: cmd,
+		Args:    eargs,
+	}
+	c.outbox <- req
 }

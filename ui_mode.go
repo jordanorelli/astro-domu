@@ -5,7 +5,7 @@ import (
 )
 
 type uiMode interface {
-	HandleEvent(tcell.Event) bool
+	handleEvent(*ui, tcell.Event) bool
 	draw(*ui)
 }
 
@@ -15,19 +15,23 @@ type boxWalker struct {
 	position point
 }
 
-func (m *boxWalker) HandleEvent(e tcell.Event) bool {
+func (m *boxWalker) handleEvent(ui *ui, e tcell.Event) bool {
 	switch v := e.(type) {
 	case *tcell.EventKey:
 		key := v.Key()
 		if key == tcell.KeyRune {
 			switch v.Rune() {
 			case 'w':
+				ui.client.send("self/move", map[string]interface{}{"delta": []int{0, -1}})
 				m.move(0, -1)
 			case 'a':
+				ui.client.send("self/move", map[string]interface{}{"delta": []int{-1, 0}})
 				m.move(-1, 0)
 			case 's':
+				ui.client.send("self/move", map[string]interface{}{"delta": []int{0, 1}})
 				m.move(0, 1)
 			case 'd':
+				ui.client.send("self/move", map[string]interface{}{"delta": []int{1, 0}})
 				m.move(1, 0)
 			}
 		}
