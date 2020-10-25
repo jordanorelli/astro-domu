@@ -1,12 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/belt-mud/internal/exit"
 	"github.com/jordanorelli/blammo"
-	"github.com/prometheus/common/log"
 )
 
 // ui represents our terminal-based user interface
@@ -21,25 +21,25 @@ func (ui *ui) run() {
 		exit.WithMessage(1, "unable to create a screen: %v", err)
 	}
 	ui.screen = screen
-	log.Debug("sceen created")
+	ui.Debug("sceen created")
 
 	if err := screen.Init(); err != nil {
 		exit.WithMessage(1, "unable to initialize screen: %v", err)
 	}
-	log.Debug("screen initialized")
+	ui.Debug("screen initialized")
 	width, height := screen.Size()
-	log.Debug("screen width: %d", width)
-	log.Debug("screen height: %d", height)
-	log.Debug("screen colors: %v", screen.Colors())
-	log.Debug("screen has mouse: %v", screen.HasMouse())
+	ui.Debug("screen width: %d", width)
+	ui.Debug("screen height: %d", height)
+	ui.Debug("screen colors: %v", screen.Colors())
+	ui.Debug("screen has mouse: %v", screen.HasMouse())
 
 	defer func() {
-		log.Debug("finalizing screen")
+		ui.Debug("finalizing screen")
 		screen.Fini()
 	}()
 
 	ui.menu()
-	log.Debug("clearing screen")
+	ui.Debug("clearing screen")
 	screen.Clear()
 
 	time.Sleep(1 * time.Second)
@@ -73,8 +73,32 @@ func (ui *ui) menu() {
 	position := point{10, 10}
 
 	redraw := func() {
+		if position.x < 2 {
+			position.x = 2
+		}
+		if position.x > 11 {
+			position.x = 11
+		}
+		if position.y < 2 {
+			position.y = 2
+		}
+		if position.y > 10 {
+			position.y = 10
+		}
 		ui.screen.Clear()
+		ui.writeString(1, 1, `┌──────────┐`, tcell.StyleDefault)
+		ui.writeString(1, 2, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 3, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 4, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 5, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 6, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 7, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 8, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 9, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 10, `│··········│`, tcell.StyleDefault)
+		ui.writeString(1, 11, `└──────────┘`, tcell.StyleDefault)
 		ui.screen.SetContent(position.x, position.y, '+', nil, tcell.StyleDefault)
+		ui.writeString(0, 12, fmt.Sprintf(" (%02d, %02d)", position.x, position.y), tcell.StyleDefault)
 		ui.screen.Show()
 	}
 	redraw()
@@ -86,7 +110,7 @@ func (ui *ui) menu() {
 		}
 		switch v := e.(type) {
 		case *tcell.EventKey:
-			log.Debug("screen saw key event: %v", v.Key())
+			ui.Debug("screen saw key event: %v", v.Key())
 			key := v.Key()
 			if key == tcell.KeyCtrlC {
 				return
@@ -108,7 +132,7 @@ func (ui *ui) menu() {
 				}
 			}
 		default:
-			log.Debug("screen saw unhandled event of type %T", e)
+			ui.Debug("screen saw unhandled event of type %T", e)
 		}
 	}
 }
