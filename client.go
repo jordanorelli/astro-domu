@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
 
@@ -19,11 +20,11 @@ type client struct {
 	port    int
 	lastSeq int
 	conn    *websocket.Conn
-	outbox  chan requestBody
+	outbox  chan wire.Request
 }
 
 func (c *client) run(ctx context.Context) {
-	c.outbox = make(chan requestBody)
+	c.outbox = make(chan wire.Request)
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: 3 * time.Second,
@@ -92,23 +93,9 @@ func (c *client) run(ctx context.Context) {
 	}
 }
 
-func (c *client) send(cmd string, args map[string]interface{}) {
-	eargs := make(map[string]json.RawMessage, len(args))
-	for k, v := range args {
-		b, err := json.Marshal(v)
-		if err != nil {
-			c.Error("failed to marshal an argument: %v", err)
-			return
-		}
-		eargs[k] = json.RawMessage(b)
-	}
+func (c *client) send(v wire.Value) {
 	c.lastSeq++
-	req := requestBody{
-		Seq:     c.lastSeq,
-		Command: cmd,
-		Args:    eargs,
-	}
-	c.outbox <- req
+	c.outbox <- wire.NewRequest(c.lastSeq, v)
 }
 
 func (c *client) readLoop() {
