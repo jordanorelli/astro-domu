@@ -2,9 +2,11 @@ package main
 
 import (
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/jordanorelli/astro-domu/internal/exit"
+	"github.com/jordanorelli/astro-domu/internal/server"
 	"github.com/jordanorelli/blammo"
 )
 
@@ -34,23 +36,16 @@ func main() {
 	case "client":
 		runClient()
 	case "server":
-		stdout := blammo.NewLineWriter(os.Stdout)
-		stderr := blammo.NewLineWriter(os.Stderr)
-
-		options := []blammo.Option{
-			blammo.DebugWriter(stdout),
-			blammo.InfoWriter(stdout),
-			blammo.ErrorWriter(stderr),
+		s := server.Server{}
+		if err := s.Start(); err != nil {
+			exit.WithMessage(1, "unable to start server: %v", err)
 		}
-
-		log := blammo.NewLog("astro", options...).Child("server")
-		s := server{Log: log, host: "127.0.0.1", port: 12805}
-		err := s.listen()
-		log.Error("listen error: %v", err)
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt)
+		<-sig
 	default:
 		exit.WithMessage(1, "supported options are [client|server]")
 	}
-
 }
 
 func runClient() {
