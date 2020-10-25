@@ -6,6 +6,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/exit"
+	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
 
@@ -14,15 +15,22 @@ type ui struct {
 	*blammo.Log
 	screen tcell.Screen
 	mode   uiMode
-	client *client
+	client *wire.Client
 }
 
 func (ui *ui) run() {
-	ui.client = &client{
+	ui.client = &wire.Client{
 		Log:  ui.Child("client"),
-		host: "127.0.0.1",
-		port: 12805,
+		Host: "127.0.0.1",
+		Port: 12805,
 	}
+
+	_, err := ui.client.Dial()
+	if err != nil {
+		ui.Error("unable to dial server: %v", err)
+		return
+	}
+
 	ctx := context.Background()
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -31,8 +39,6 @@ func (ui *ui) run() {
 		cancel()
 		time.Sleep(time.Second)
 	}()
-
-	go ui.client.run(ctx)
 
 	screen, err := tcell.NewScreen()
 	if err != nil {
