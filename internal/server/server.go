@@ -18,9 +18,8 @@ import (
 
 type Server struct {
 	*blammo.Log
-	Host string
-	Port int
-
+	Host          string
+	Port          int
 	lastSessionID int
 }
 
@@ -50,6 +49,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("server failed to start a listener: %w", err)
 	}
 	s.Log.Info("listening for TCP traffic on %q", addr)
+
 	go s.runHTTPServer(lis)
 
 	return nil
@@ -70,6 +70,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.Error("upgrade error: %v", err)
 		return
 	}
+
+	defer func() {
+		s.Info("closing connection")
+		if err := conn.Close(); err != nil {
+			s.Error("error closing connection: %v", err)
+		}
+	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

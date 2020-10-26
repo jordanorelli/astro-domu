@@ -112,6 +112,13 @@ func (c *Client) readLoop(notifications chan<- Response) {
 		}
 	}
 	c.done <- false
+
+	c.Info("closing connection")
+	if err := c.conn.Close(); err != nil {
+		c.Error("error on connection close: %v", err)
+	} else {
+		c.Info("closed connection cleanly")
+	}
 }
 
 func (c *Client) writeLoop() {
@@ -158,6 +165,8 @@ func (c *Client) writeLoop() {
 			close(p.done)
 
 		case shouldClose := <-c.done:
+			c.Info("write loop sees done signal: %t", shouldClose)
+
 			if shouldClose {
 				c.Info("sending close frame")
 				msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
@@ -166,7 +175,6 @@ func (c *Client) writeLoop() {
 				} else {
 					c.Info("sent close frame")
 				}
-				c.conn = nil
 			}
 			return
 		}
