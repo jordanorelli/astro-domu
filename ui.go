@@ -67,6 +67,7 @@ func (ui *ui) run() {
 		height: 6,
 	}
 	ui.menu()
+	ui.client.Close()
 	ui.Debug("clearing screen")
 	screen.Clear()
 }

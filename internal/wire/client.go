@@ -21,6 +21,7 @@ type Client struct {
 
 	outbox   chan *pending
 	resolved chan Response
+	done     chan bool
 }
 
 // Dial dials the server specified by the client. The returned read-only
@@ -29,6 +30,7 @@ type Client struct {
 func (c *Client) Dial() (<-chan Response, error) {
 	c.outbox = make(chan *pending)
 	c.resolved = make(chan Response)
+	c.done = make(chan bool, 1)
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: 3 * time.Second,
@@ -51,10 +53,9 @@ func (c *Client) Dial() (<-chan Response, error) {
 	c.Info("connected to server")
 
 	c.conn = conn
-	done := make(chan bool, 2)
 	notifications := make(chan Response)
 	go c.readLoop(notifications)
-	go c.writeLoop(done)
+	go c.writeLoop()
 	return notifications, nil
 }
 
@@ -80,19 +81,19 @@ func (c *Client) Send(v Value) (Response, error) {
 	}
 }
 
-func (c *Client) readLoop(notifications chan<- Response) {
-	defer close(notifications)
+func (c *Client) Close() { c.done <- true }
 
+func (c *Client) readLoop(notifications chan<- Response) {
 	for {
 		_, r, err := c.conn.NextReader()
 		if err != nil {
 			c.Error("unable to get a reader frame: %v", err)
-			return
+			break
 		}
 		b, err := ioutil.ReadAll(r)
 		if err != nil {
 			c.Error("unable to read frame: %v", err)
-			return
+			continue
 		}
 		var res Response
 		if err := json.Unmarshal(b, &res); err != nil {
@@ -106,9 +107,10 @@ func (c *Client) readLoop(notifications chan<- Response) {
 			c.resolved <- res
 		}
 	}
+	c.done <- false
 }
 
-func (c *Client) writeLoop(done chan bool) {
+func (c *Client) writeLoop() {
 	sent := make(map[int]*pending)
 
 	for {
@@ -151,7 +153,7 @@ func (c *Client) writeLoop(done chan bool) {
 			p.res = res
 			close(p.done)
 
-		case shouldClose := <-done:
+		case shouldClose := <-c.done:
 			if shouldClose {
 				msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
 				if err := c.conn.WriteMessage(websocket.CloseMessage, msg); err != nil {
@@ -164,7 +166,6 @@ func (c *Client) writeLoop(done chan bool) {
 				c.Info("connection closed")
 				c.conn = nil
 				return
-
 			}
 		}
 	}
