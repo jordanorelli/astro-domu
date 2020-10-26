@@ -135,35 +135,45 @@ func (s *Server) Shutdown() {
 	s.Info("starting shutdown procedure")
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
-		s.Info("shutting down http server")
+
+		if err := s.world.Stop(); err != nil {
+			s.Error("error stopping the simulation: %v", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		log := s.Child("http")
+		log.Info("shutting down http server")
 		if err := s.http.Shutdown(context.Background()); err != nil {
-			s.Error("error shutting down http server: %v", err)
+			log.Error("error shutting down http server: %v", err)
 		} else {
-			s.Info("http server has shut down")
+			log.Info("http server has shut down")
 		}
 	}()
 
 	go func() {
 		defer wg.Done()
 
+		log := s.Child("sessions")
 		s.Lock()
 		if len(s.sessions) > 0 {
-			s.Info("broadcasting shutdown to %d active sessions", len(s.sessions))
+			log.Info("broadcasting shutdown to %d active sessions", len(s.sessions))
 			for id, sn := range s.sessions {
-				s.Info("sending done signal to session: %d", id)
+				log.Info("sending done signal to session: %d", id)
 				sn.done <- true
 			}
 		} else {
-			s.Info("no active sessions")
+			log.Info("no active sessions")
 		}
 		s.Unlock()
 
-		s.Info("waiting on connected sessions to shut down")
+		log.Info("waiting on connected sessions to shut down")
 		s.waitOnSessions.Wait()
-		s.Info("all sessions have shut down")
+		log.Info("all sessions have shut down")
 	}()
 	wg.Wait()
 	s.Info("shutdown procedure complete")
