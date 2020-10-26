@@ -1,4 +1,7 @@
 package sim
 
-type Room struct {
+type room struct {
+	origin point
+	width  int
+	height int
 }

@@ -12,15 +12,17 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/jordanorelli/astro-domu/internal/errors"
+	"github.com/jordanorelli/astro-domu/internal/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
 
 type Server struct {
 	*blammo.Log
-	Host string
-	Port int
-	http *http.Server
+	Host  string
+	Port  int
+	http  *http.Server
+	world *sim.World
 
 	sync.Mutex
 	lastSessionID  int
@@ -47,6 +49,9 @@ func (s *Server) Start() error {
 
 		s.Log = blammo.NewLog("astro", options...).Child("server")
 	}
+
+	s.world = sim.NewWorld(s.Log.Child("world"))
+	go s.world.Run(3)
 
 	addr := fmt.Sprintf("%s:%d", s.Host, s.Port)
 	lis, err := net.Listen("tcp", addr)
