@@ -13,9 +13,10 @@ import (
 type session struct {
 	*blammo.Log
 	id     int
+	start  time.Time
 	conn   *websocket.Conn
 	outbox chan wire.Response
-	done   chan chan struct{}
+	done   chan bool
 }
 
 // run is the session run loop.
@@ -26,9 +27,9 @@ func (sn *session) run() {
 			if err := sn.sendResponse(res); err != nil {
 				sn.Error(err.Error())
 			}
-		case c, ok := <-sn.done:
-			sn.Info("saw done signal: %t", ok)
-			if ok {
+		case sendCloseFrame := <-sn.done:
+			sn.Info("saw done signal")
+			if sendCloseFrame {
 				sn.Info("sending close frame")
 				msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
 				if err := sn.conn.WriteMessage(websocket.CloseMessage, msg); err != nil {
@@ -36,7 +37,6 @@ func (sn *session) run() {
 				} else {
 					sn.Info("sent close frame")
 				}
-				close(c)
 			}
 			return
 		}

@@ -17,13 +17,15 @@ import (
 )
 
 type Server struct {
-	sync.Mutex
 	*blammo.Log
-	Host          string
-	Port          int
-	http          *http.Server
-	lastSessionID int
-	sessions      map[int]*session
+	Host string
+	Port int
+	http *http.Server
+
+	sync.Mutex
+	lastSessionID  int
+	sessions       map[int]*session
+	waitOnSessions sync.WaitGroup
 }
 
 func (s *Server) Start() error {
@@ -77,23 +79,31 @@ func (s *Server) createSession(conn *websocket.Conn) *session {
 	sn := &session{
 		Log:    s.Log.Child("sessions").Child(strconv.Itoa(s.lastSessionID)),
 		id:     s.lastSessionID,
+		start:  time.Now(),
 		conn:   conn,
 		outbox: make(chan wire.Response),
-		done:   make(chan chan struct{}, 1),
+		done:   make(chan bool, 1),
 	}
 	if s.sessions == nil {
 		s.sessions = make(map[int]*session)
 	}
+	s.waitOnSessions.Add(1)
 	s.sessions[sn.id] = sn
+	s.Info("created session %d, %d sessions active", sn.id, len(s.sessions))
 	return sn
 }
 
+// dropSession removes a session from the server. This should only be called as
+// a result of the connection's read loop terminating
 func (s *Server) dropSession(sn *session) {
 	s.Lock()
 	defer s.Unlock()
 
 	close(sn.done)
 	delete(s.sessions, sn.id)
+	s.waitOnSessions.Add(-1)
+
+	s.Info("dropped session %d after %v time connected, %d sessions active", sn.id, time.Since(sn.start), len(s.sessions))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -105,35 +115,48 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer func() {
-		s.Info("closing connection")
-		if err := conn.Close(); err != nil {
-			s.Error("error closing connection: %v", err)
-		}
-	}()
-
 	sn := s.createSession(conn)
-	defer s.dropSession(sn)
-
 	go sn.run()
 	sn.read()
+	s.dropSession(sn)
+
+	sn.Info("closing connection")
+	if err := conn.Close(); err != nil {
+		s.Error("error closing connection: %v", err)
+	}
 }
 
 func (s *Server) Shutdown() {
-	s.Info("shutting down")
-	s.http.Shutdown(context.Background())
+	s.Info("starting shutdown procedure")
 
-	s.Lock()
-	zzz := make([]chan struct{}, 0, len(s.sessions))
-	for id, sn := range s.sessions {
-		s.Info("sending done signal to session: %d", id)
-		c := make(chan struct{})
-		zzz = append(zzz, c)
-		sn.done <- c
-	}
-	s.Unlock()
-	for _, c := range zzz {
-		<-c
-	}
-	time.Sleep(time.Second)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		s.Info("shutting down http server")
+		if err := s.http.Shutdown(context.Background()); err != nil {
+			s.Error("error shutting down http server: %v", err)
+		} else {
+			s.Info("http server has shut down")
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		s.Info("broadcasting shutdown to all active sessions")
+
+		s.Lock()
+		for id, sn := range s.sessions {
+			s.Info("sending done signal to session: %d", id)
+			sn.done <- true
+		}
+		s.Unlock()
+
+		s.Info("waiting on connected sessions to shut down")
+		s.waitOnSessions.Wait()
+		s.Info("all sessions have shut down")
+	}()
+	wg.Wait()
+	s.Info("shutdown procedure complete")
 }
