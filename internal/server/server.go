@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/jordanorelli/astro-domu/internal/errors"
@@ -17,10 +19,13 @@ import (
 )
 
 type Server struct {
+	sync.Mutex
 	*blammo.Log
 	Host          string
 	Port          int
+	http          *http.Server
 	lastSessionID int
+	sessions      map[int]*session
 }
 
 func (s *Server) Start() error {
@@ -56,10 +61,41 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) runHTTPServer(lis net.Listener) {
-	err := http.Serve(lis, s)
+	zzz := http.Server{
+		Handler: s,
+	}
+	s.http = &zzz
+	err := zzz.Serve(lis)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.Error("error in http.Serve: %v", err)
 	}
+}
+
+func (s *Server) createSession(conn *websocket.Conn) *session {
+	s.Lock()
+	defer s.Unlock()
+
+	s.lastSessionID++
+	sn := &session{
+		Log:    s.Log.Child("sessions").Child(strconv.Itoa(s.lastSessionID)),
+		id:     s.lastSessionID,
+		conn:   conn,
+		outbox: make(chan wire.Response),
+		done:   make(chan chan struct{}, 1),
+	}
+	if s.sessions == nil {
+		s.sessions = make(map[int]*session)
+	}
+	s.sessions[sn.id] = sn
+	return sn
+}
+
+func (s *Server) dropSession(sn *session) {
+	s.Lock()
+	defer s.Unlock()
+
+	close(sn.done)
+	delete(s.sessions, sn.id)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -78,17 +114,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	sn := s.createSession(conn)
+	defer s.dropSession(sn)
 
-	s.lastSessionID++
-	sn := session{
-		Log:    s.Log.Child("sessions").Child(strconv.Itoa(s.lastSessionID)),
-		id:     s.lastSessionID,
-		conn:   conn,
-		outbox: make(chan wire.Response),
-	}
-	go sn.pump(ctx)
+	go sn.run()
 
 	for {
 		t, r, err := conn.NextReader()
@@ -120,4 +149,23 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			sn.outbox <- wire.ErrorResponse(0, "unable to parse binary frames")
 		}
 	}
+}
+
+func (s *Server) Shutdown() {
+	s.Info("shutting down")
+	s.http.Shutdown(context.Background())
+
+	s.Lock()
+	zzz := make([]chan struct{}, 0, len(s.sessions))
+	for id, sn := range s.sessions {
+		s.Info("sending done signal to session: %d", id)
+		c := make(chan struct{})
+		zzz = append(zzz, c)
+		sn.done <- c
+	}
+	s.Unlock()
+	for _, c := range zzz {
+		<-c
+	}
+	time.Sleep(time.Second)
 }

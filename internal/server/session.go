@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -16,19 +15,30 @@ type session struct {
 	id     int
 	conn   *websocket.Conn
 	outbox chan wire.Response
+	done   chan chan struct{}
 }
 
 // pump is the session send loop. Pump should pump the session's outbox
 // messages to the underlying connection until the context is closed.
-func (sn *session) pump(ctx context.Context) {
+func (sn *session) run() {
 	for {
 		select {
 		case res := <-sn.outbox:
 			if err := sn.sendResponse(res); err != nil {
 				sn.Error(err.Error())
 			}
-		case <-ctx.Done():
-			sn.Info("parent context done, shutting down write pump")
+		case c, ok := <-sn.done:
+			sn.Info("saw done signal: %t", ok)
+			if ok {
+				sn.Info("sending close frame")
+				msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+				if err := sn.conn.WriteMessage(websocket.CloseMessage, msg); err != nil {
+					sn.Error("failed to write close message: %v", err)
+				} else {
+					sn.Info("sent close frame")
+				}
+				close(c)
+			}
 			return
 		}
 	}
