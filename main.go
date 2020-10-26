@@ -7,6 +7,7 @@ import (
 
 	"github.com/jordanorelli/astro-domu/internal/exit"
 	"github.com/jordanorelli/astro-domu/internal/server"
+	"github.com/jordanorelli/astro-domu/internal/ui"
 	"github.com/jordanorelli/blammo"
 )
 
@@ -61,8 +62,8 @@ func runClient() {
 		log.Info("total play time: %v", finished.Sub(start))
 	}()
 
-	ui := ui{
+	ui := ui.UI{
 		Log: log.Child("ui"),
 	}
-	ui.run()
+	ui.Run()
 }

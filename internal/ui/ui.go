@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"context"
@@ -10,15 +10,14 @@ import (
 	"github.com/jordanorelli/blammo"
 )
 
-// ui represents our terminal-based user interface
-type ui struct {
+type UI struct {
 	*blammo.Log
 	screen tcell.Screen
-	mode   uiMode
+	mode   Mode
 	client *wire.Client
 }
 
-func (ui *ui) run() {
+func (ui *UI) Run() {
 	ui.client = &wire.Client{
 		Log:  ui.Child("client"),
 		Host: "127.0.0.1",
@@ -75,7 +74,7 @@ func (ui *ui) run() {
 // writeString writes a string in the given style from left to right beginning
 // at the location (x, y). Writing of the screen just fails silently so don't
 // do that.
-func (ui *ui) writeString(x, y int, s string, style tcell.Style) {
+func (ui *UI) writeString(x, y int, s string, style tcell.Style) {
 	width, height := ui.screen.Size()
 	if y > height {
 		return
@@ -89,7 +88,7 @@ func (ui *ui) writeString(x, y int, s string, style tcell.Style) {
 	}
 }
 
-func (ui *ui) menu() {
+func (ui *UI) menu() {
 	ui.screen.Clear()
 	_, height := ui.screen.Size()
 	ui.writeString(0, height-1, "fart", tcell.StyleDefault)

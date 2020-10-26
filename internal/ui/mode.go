@@ -1,13 +1,13 @@
-package main
+package ui
 
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 )
 
-type uiMode interface {
-	handleEvent(*ui, tcell.Event) bool
-	draw(*ui)
+type Mode interface {
+	handleEvent(*UI, tcell.Event) bool
+	draw(*UI)
 }
 
 type boxWalker struct {
@@ -16,7 +16,7 @@ type boxWalker struct {
 	position point
 }
 
-func (m *boxWalker) handleEvent(ui *ui, e tcell.Event) bool {
+func (m *boxWalker) handleEvent(ui *UI, e tcell.Event) bool {
 	switch v := e.(type) {
 	case *tcell.EventKey:
 		key := v.Key()
@@ -47,7 +47,7 @@ func (m *boxWalker) move(dx, dy int) {
 	m.position.y = clamp(m.position.y+dy, 0, m.height-1)
 }
 
-func (m *boxWalker) draw(ui *ui) {
+func (m *boxWalker) draw(ui *UI) {
 	offset := point{1, 1}
 
 	// fill in background dots first
