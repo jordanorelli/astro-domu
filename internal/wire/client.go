@@ -87,6 +87,10 @@ func (c *Client) readLoop(notifications chan<- Response) {
 	for {
 		_, r, err := c.conn.NextReader()
 		if err != nil {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				c.Info("received close frame from server")
+				break
+			}
 			c.Error("unable to get a reader frame: %v", err)
 			break
 		}
@@ -155,18 +159,16 @@ func (c *Client) writeLoop() {
 
 		case shouldClose := <-c.done:
 			if shouldClose {
+				c.Info("sending close frame")
 				msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
 				if err := c.conn.WriteMessage(websocket.CloseMessage, msg); err != nil {
 					c.Error("failed to write close message: %v", err)
+				} else {
+					c.Info("sent close frame")
 				}
-				c.Info("closing connection")
-				if err := c.conn.Close(); err != nil {
-					c.Error("failed to close connection: %v", err)
-				}
-				c.Info("connection closed")
 				c.conn = nil
-				return
 			}
+			return
 		}
 	}
 }

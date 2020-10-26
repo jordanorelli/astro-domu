@@ -86,7 +86,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for {
 		t, r, err := conn.NextReader()
 		if err != nil {
-			s.Error("read error: %v", err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				s.Info("received close frame from client")
+			} else {
+				s.Error("read error: %v", err)
+			}
 			return
 		}
 
