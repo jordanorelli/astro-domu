@@ -1,9 +1,6 @@
 package ui
 
 import (
-	"context"
-	"time"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/exit"
 	"github.com/jordanorelli/astro-domu/internal/wire"
@@ -24,20 +21,11 @@ func (ui *UI) Run() {
 		Port: 12805,
 	}
 
-	_, err := ui.client.Dial()
+	notifications, err := ui.client.Dial()
 	if err != nil {
-		ui.Error("unable to dial server: %v", err)
-		return
+		exit.WithMessage(1, "unable to dial server: %v", err)
 	}
-
-	ctx := context.Background()
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer func() {
-		ui.Debug("canceling client context")
-		cancel()
-		time.Sleep(time.Second)
-	}()
+	go ui.handleNotifications(notifications)
 
 	screen, err := tcell.NewScreen()
 	if err != nil {
@@ -56,19 +44,30 @@ func (ui *UI) Run() {
 	ui.Debug("screen colors: %v", screen.Colors())
 	ui.Debug("screen has mouse: %v", screen.HasMouse())
 
-	defer func() {
-		ui.Debug("finalizing screen")
-		screen.Fini()
-	}()
-
 	ui.mode = &boxWalker{
 		width:  10,
 		height: 6,
 	}
-	ui.menu()
-	ui.client.Close()
-	ui.Debug("clearing screen")
-	screen.Clear()
+	ui.Info("running ui")
+	if ui.run() {
+		ui.Info("user requested close")
+		ui.Info("closing client")
+		ui.client.Close()
+		ui.Info("client closed")
+		ui.Info("finalizing screen")
+	}
+	ui.Info("run loop done, shutting down")
+	screen.Fini()
+}
+
+func (ui *UI) handleNotifications(c <-chan wire.Response) {
+	for n := range c {
+		ui.Info("ignoring notification: %v", n)
+	}
+	ui.Info("notifications channel is closed so we must be done")
+	ui.Info("clearing and finalizing screen from notifications goroutine")
+	ui.screen.Clear()
+	ui.screen.Fini()
 }
 
 // writeString writes a string in the given style from left to right beginning
@@ -88,23 +87,25 @@ func (ui *UI) writeString(x, y int, s string, style tcell.Style) {
 	}
 }
 
-func (ui *UI) menu() {
+func (ui *UI) run() bool {
 	ui.screen.Clear()
-	_, height := ui.screen.Size()
-	ui.writeString(0, height-1, "fart", tcell.StyleDefault)
-	ui.screen.Sync()
+	ui.mode.draw(ui)
 
 	for {
 		e := ui.screen.PollEvent()
 		if e == nil {
-			break
+			ui.Info("run loop sees nil event, breaking out")
+			// someone else shut us down, so return false
+			return false
 		}
 
 		switch v := e.(type) {
 		case *tcell.EventKey:
 			key := v.Key()
 			if key == tcell.KeyCtrlC {
-				return
+				ui.Info("saw ctrl+c keyboard input, shutting down")
+				// we want to shut things down
+				return true
 			}
 		}
 

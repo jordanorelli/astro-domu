@@ -144,12 +144,15 @@ func (s *Server) Shutdown() {
 	go func() {
 		defer wg.Done()
 
-		s.Info("broadcasting shutdown to all active sessions")
-
 		s.Lock()
-		for id, sn := range s.sessions {
-			s.Info("sending done signal to session: %d", id)
-			sn.done <- true
+		if len(s.sessions) > 0 {
+			s.Info("broadcasting shutdown to %d active sessions", len(s.sessions))
+			for id, sn := range s.sessions {
+				s.Info("sending done signal to session: %d", id)
+				sn.done <- true
+			}
+		} else {
+			s.Info("no active sessions")
 		}
 		s.Unlock()
 

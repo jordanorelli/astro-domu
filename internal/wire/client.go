@@ -84,6 +84,8 @@ func (c *Client) Send(v Value) (Response, error) {
 func (c *Client) Close() { c.done <- true }
 
 func (c *Client) readLoop(notifications chan<- Response) {
+	defer close(notifications)
+
 	for {
 		_, r, err := c.conn.NextReader()
 		if err != nil {
