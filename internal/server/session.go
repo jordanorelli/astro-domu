@@ -18,8 +18,7 @@ type session struct {
 	done   chan chan struct{}
 }
 
-// pump is the session send loop. Pump should pump the session's outbox
-// messages to the underlying connection until the context is closed.
+// run is the session run loop.
 func (sn *session) run() {
 	for {
 		select {
@@ -44,6 +43,55 @@ func (sn *session) run() {
 	}
 }
 
+// read reads for messages on the underlying websocket.
+func (sn *session) read() {
+	for {
+		t, b, err := sn.conn.ReadMessage()
+		if err != nil {
+			if v, ok := err.(*websocket.CloseError); ok {
+				switch v.Code {
+				case websocket.CloseNormalClosure,
+					websocket.CloseGoingAway:
+					sn.Info("received close frame with code %d (%v)", v.Code, err)
+				case websocket.CloseNoStatusReceived,
+					websocket.CloseProtocolError,
+					websocket.CloseUnsupportedData,
+					websocket.CloseAbnormalClosure,
+					websocket.CloseInvalidFramePayloadData,
+					websocket.ClosePolicyViolation,
+					websocket.CloseMessageTooBig,
+					websocket.CloseMandatoryExtension,
+					websocket.CloseInternalServerErr,
+					websocket.CloseServiceRestart,
+					websocket.CloseTryAgainLater,
+					websocket.CloseTLSHandshake:
+					sn.Error("received close frame with code %d (%v)", v.Code, err)
+				default:
+					sn.Error("received close frame with code %d (%v)", v.Code, err)
+				}
+				return
+			}
+			sn.Error("unexpected read error: %v", err)
+			return
+		}
+
+		switch t {
+		case websocket.TextMessage:
+			sn.Log.Child("received-frame").Info(string(b))
+			var req wire.Request
+			if err := json.Unmarshal(b, &req); err != nil {
+				sn.Error("unable to parse request: %v", err)
+				sn.outbox <- wire.ErrorResponse(0, "unable to parse request: %v", err)
+				break
+			}
+			sn.outbox <- wire.NewResponse(req.Seq, wire.OK{})
+		case websocket.BinaryMessage:
+			sn.outbox <- wire.ErrorResponse(0, "unable to parse binary frames")
+		}
+	}
+}
+
+// sendResponse sends an individual response on the underlying websocket connection
 func (sn *session) sendResponse(res wire.Response) error {
 	payload, err := json.Marshal(res)
 	if err != nil {

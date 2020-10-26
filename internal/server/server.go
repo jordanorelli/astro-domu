@@ -2,9 +2,7 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -61,11 +59,11 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) runHTTPServer(lis net.Listener) {
-	zzz := http.Server{
+	srv := http.Server{
 		Handler: s,
 	}
-	s.http = &zzz
-	err := zzz.Serve(lis)
+	s.http = &srv
+	err := srv.Serve(lis)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.Error("error in http.Serve: %v", err)
 	}
@@ -118,37 +116,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer s.dropSession(sn)
 
 	go sn.run()
-
-	for {
-		t, r, err := conn.NextReader()
-		if err != nil {
-			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-				s.Info("received close frame from client")
-			} else {
-				s.Error("read error: %v", err)
-			}
-			return
-		}
-
-		switch t {
-		case websocket.TextMessage:
-			text, err := ioutil.ReadAll(r)
-			if err != nil {
-				s.Error("readall error: %v", err)
-				break
-			}
-			sn.Log.Child("received-frame").Info(string(text))
-			var req wire.Request
-			if err := json.Unmarshal(text, &req); err != nil {
-				s.Error("unable to parse request: %v", err)
-				sn.outbox <- wire.ErrorResponse(0, "unable to parse request: %v", err)
-				break
-			}
-			sn.outbox <- wire.NewResponse(req.Seq, wire.OK{})
-		case websocket.BinaryMessage:
-			sn.outbox <- wire.ErrorResponse(0, "unable to parse binary frames")
-		}
-	}
+	sn.read()
 }
 
 func (s *Server) Shutdown() {
