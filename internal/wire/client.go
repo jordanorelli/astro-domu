@@ -87,6 +87,7 @@ func (c *Client) readLoop(notifications chan<- Response) {
 	defer close(notifications)
 
 	for {
+		c.Info("waiting for a reader frame")
 		_, r, err := c.conn.NextReader()
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
@@ -130,7 +131,7 @@ func (c *Client) writeLoop() {
 		select {
 		case p := <-c.outbox:
 			c.lastSeq++
-			req := NewRequest(c.lastSeq, p.v)
+			req := Request{c.lastSeq, p.v}
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {

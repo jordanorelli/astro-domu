@@ -163,8 +163,9 @@ func (s *Server) Shutdown() {
 
 		log := s.Child("sessions")
 		s.Lock()
-		if len(s.sessions) > 0 {
-			log.Info("broadcasting shutdown to %d active sessions", len(s.sessions))
+		numSessions := len(s.sessions)
+		if numSessions > 0 {
+			log.Info("broadcasting shutdown to %d active sessions", numSessions)
 			for id, sn := range s.sessions {
 				log.Info("sending done signal to session: %d", id)
 				sn.done <- true
@@ -174,7 +175,9 @@ func (s *Server) Shutdown() {
 		}
 		s.Unlock()
 
-		log.Info("waiting on connected sessions to shut down")
+		if numSessions > 0 {
+			log.Info("waiting on %d connected sessions to shut down", numSessions)
+		}
 		s.waitOnSessions.Wait()
 		log.Info("all sessions have shut down")
 	}()
