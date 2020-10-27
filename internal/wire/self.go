@@ -6,4 +6,4 @@ type Self_Move struct {
 	Y     int  `json:"y"`
 }
 
-func (Self_Move) NetTag() Tag { return T_Client_Move }
+func (Self_Move) NetTag() string { return "self/move" }

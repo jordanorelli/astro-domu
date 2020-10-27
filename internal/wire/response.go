@@ -2,7 +2,7 @@ package wire
 
 type Response struct {
 	Re   int         `json:"re,omitempty"`
-	Type Tag         `json:"type"`
+	Type string      `json:"type"`
 	Body interface{} `json:"body"`
 }
 

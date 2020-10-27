@@ -9,8 +9,7 @@ import (
 // player represents a player character in the simulation
 type player struct {
 	*blammo.Log
-	sessionID int
-	entityID  int
+	entityID int
 }
 
 func (p *player) update(dt time.Duration) {

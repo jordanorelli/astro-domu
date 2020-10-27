@@ -61,9 +61,8 @@ func (w *World) SpawnPlayer(id int) int {
 	w.Info("spawning player with id: %d into room %q", id, r.name)
 	t := &r.tiles[0]
 	p := player{
-		Log:       w.Child("players").Child(strconv.Itoa(id)),
-		sessionID: id,
-		entityID:  w.lastEntityID,
+		Log:      w.Child("players").Child(strconv.Itoa(id)),
+		entityID: w.lastEntityID,
 	}
 	t.addEntity(&p)
 	return p.entityID
