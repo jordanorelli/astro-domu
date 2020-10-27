@@ -16,7 +16,6 @@ type room struct {
 }
 
 func (r *room) update(dt time.Duration) {
-	r.Info("updating room")
 	for _, t := range r.tiles {
 		for _, e := range t.contents {
 			e.update(dt)

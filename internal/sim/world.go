@@ -82,7 +82,6 @@ func (w *World) DespawnPlayer(id int) {
 }
 
 func (w *World) tick(d time.Duration) {
-	w.Info("tick. elapsed: %v", d)
 	for _, r := range w.rooms {
 		r.update(d)
 	}

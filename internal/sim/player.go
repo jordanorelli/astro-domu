@@ -13,7 +13,6 @@ type player struct {
 }
 
 func (p *player) update(dt time.Duration) {
-	p.Info("tick")
 }
 
 func (p *player) id() int { return p.entityID }
