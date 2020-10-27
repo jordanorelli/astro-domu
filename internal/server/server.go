@@ -94,6 +94,7 @@ func (s *Server) createSession(conn *websocket.Conn) *session {
 	}
 	s.waitOnSessions.Add(1)
 	s.sessions[sn.id] = sn
+	sn.entityID = s.world.SpawnPlayer(sn.id)
 	s.Info("created session %d, %d sessions active", sn.id, len(s.sessions))
 	return sn
 }
@@ -106,6 +107,7 @@ func (s *Server) dropSession(sn *session) {
 
 	close(sn.done)
 	delete(s.sessions, sn.id)
+	s.world.DespawnPlayer(sn.entityID)
 	s.waitOnSessions.Add(-1)
 
 	s.Info("dropped session %d after %v time connected, %d sessions active", sn.id, time.Since(sn.start), len(s.sessions))
@@ -146,6 +148,7 @@ func (s *Server) Shutdown() {
 
 	go func() {
 		defer wg.Done()
+
 		log := s.Child("http")
 		log.Info("shutting down http server")
 		if err := s.http.Shutdown(context.Background()); err != nil {

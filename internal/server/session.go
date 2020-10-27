@@ -12,11 +12,12 @@ import (
 
 type session struct {
 	*blammo.Log
-	id     int
-	start  time.Time
-	conn   *websocket.Conn
-	outbox chan wire.Response
-	done   chan bool
+	id       int
+	entityID int
+	start    time.Time
+	conn     *websocket.Conn
+	outbox   chan wire.Response
+	done     chan bool
 }
 
 // run is the session run loop.
