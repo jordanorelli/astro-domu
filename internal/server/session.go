@@ -6,13 +6,16 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/jordanorelli/astro-domu/internal/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
 
 type session struct {
 	*blammo.Log
+	Name     string
 	id       int
+	world    *sim.World
 	entityID int
 	start    time.Time
 	conn     *websocket.Conn
@@ -79,13 +82,34 @@ func (sn *session) read() {
 		switch t {
 		case websocket.TextMessage:
 			sn.Log.Child("received-frame").Info(string(b))
+
 			var req wire.Request
 			if err := json.Unmarshal(b, &req); err != nil {
 				sn.Error("unable to parse request: %v", err)
 				sn.outbox <- wire.ErrorResponse(0, "unable to parse request: %v", err)
 				break
 			}
-			sn.outbox <- wire.Response{req.Seq, wire.OK{}}
+			sn.Info("received message of type %T", req.Body)
+
+			switch v := req.Body.(type) {
+			case *Login:
+				sn.Name = v.Name
+				sn.world.Inbox <- sim.Request{
+					From: sn.Name,
+					Wants: sim.SpawnPlayer{
+						Outbox: sn.outbox,
+					},
+				}
+				sn.outbox <- wire.Response{req.Seq, wire.OK{}}
+			case sim.Effect:
+				sn.world.Inbox <- sim.Request{
+					From:  sn.Name,
+					Wants: v,
+				}
+				sn.outbox <- wire.Response{req.Seq, wire.OK{}}
+			default:
+				sn.outbox <- wire.ErrorResponse(req.Seq, "not sure how to handle that")
+			}
 		case websocket.BinaryMessage:
 			sn.outbox <- wire.ErrorResponse(0, "unable to parse binary frames")
 		}
@@ -115,4 +139,14 @@ func (sn *session) sendResponse(res wire.Response) error {
 	}
 	sn.Child("sent-frame").Info(string(payload))
 	return nil
+}
+
+type Login struct {
+	Name string `json:"name"`
+}
+
+func (Login) NetTag() string { return "login" }
+
+func init() {
+	wire.Register(func() wire.Value { return new(Login) })
 }

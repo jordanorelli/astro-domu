@@ -5,15 +5,17 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/exit"
+	"github.com/jordanorelli/astro-domu/internal/server"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
 
 type UI struct {
 	*blammo.Log
-	screen tcell.Screen
-	mode   Mode
-	client *wire.Client
+	PlayerName string
+	screen     tcell.Screen
+	mode       Mode
+	client     *wire.Client
 }
 
 func (ui *UI) Run() {
@@ -23,6 +25,8 @@ func (ui *UI) Run() {
 	if err := ui.connect(); err != nil {
 		return
 	}
+
+	ui.client.Send(server.Login{Name: ui.PlayerName})
 
 	ui.mode = &boxWalker{width: 10, height: 6}
 	ui.Info("running ui")

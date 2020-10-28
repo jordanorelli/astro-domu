@@ -35,7 +35,7 @@ func main() {
 
 	switch os.Args[1] {
 	case "client":
-		runClient()
+		runClient(os.Args[2])
 	case "server":
 		s := server.Server{}
 		if err := s.Start(); err != nil {
@@ -51,7 +51,7 @@ func main() {
 	}
 }
 
-func runClient() {
+func runClient(name string) {
 	log := newLog("./astro.log").Child("client")
 
 	start := time.Now()
@@ -63,7 +63,8 @@ func runClient() {
 	}()
 
 	ui := ui.UI{
-		Log: log.Child("ui"),
+		Log:        log.Child("ui"),
+		PlayerName: name,
 	}
 	ui.Run()
 }

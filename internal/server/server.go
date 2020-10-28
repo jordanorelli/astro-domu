@@ -88,14 +88,15 @@ func (s *Server) createSession(conn *websocket.Conn) *session {
 		conn:   conn,
 		outbox: make(chan wire.Response),
 		done:   make(chan bool, 1),
+		world:  s.world,
 	}
 	if s.sessions == nil {
 		s.sessions = make(map[int]*session)
 	}
 	s.waitOnSessions.Add(1)
 	s.sessions[sn.id] = sn
-	sn.entityID = s.world.SpawnPlayer(sn.id)
-	s.Info("created session %d, %d sessions active", sn.id, len(s.sessions))
+	// sn.entityID = s.world.SpawnPlayer(sn.id)
+	// s.Info("created session %d, %d sessions active", sn.id, len(s.sessions))
 	return sn
 }
 

@@ -2,7 +2,7 @@ package ui
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/jordanorelli/astro-domu/internal/wire"
+	"github.com/jordanorelli/astro-domu/internal/sim"
 )
 
 type Mode interface {
@@ -23,16 +23,16 @@ func (m *boxWalker) handleEvent(ui *UI, e tcell.Event) bool {
 		if key == tcell.KeyRune {
 			switch v.Rune() {
 			case 'w':
-				ui.client.Send(wire.Self_Move{Delta: true, X: 0, Y: -1})
+				ui.client.Send(sim.Move{0, -1})
 				m.move(0, -1)
 			case 'a':
-				ui.client.Send(wire.Self_Move{Delta: true, X: -1, Y: 0})
+				ui.client.Send(sim.Move{-1, 0})
 				m.move(-1, 0)
 			case 's':
-				ui.client.Send(wire.Self_Move{Delta: true, X: 0, Y: 1})
+				ui.client.Send(sim.Move{0, 1})
 				m.move(0, 1)
 			case 'd':
-				ui.client.Send(wire.Self_Move{Delta: true, X: 1, Y: 0})
+				ui.client.Send(sim.Move{1, 0})
 				m.move(1, 0)
 			}
 		}

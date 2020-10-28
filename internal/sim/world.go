@@ -1,7 +1,6 @@
 package sim
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/jordanorelli/blammo"
@@ -10,9 +9,12 @@ import (
 // World is the entire simulated world. A world consists of many rooms.
 type World struct {
 	*blammo.Log
+	Inbox chan Request
+
 	rooms        []room
 	done         chan bool
 	lastEntityID int
+	players      map[string]*player
 }
 
 func NewWorld(log *blammo.Log) *World {
@@ -25,9 +27,11 @@ func NewWorld(log *blammo.Log) *World {
 		tiles:  make([]tile, 100),
 	}
 	return &World{
-		Log:   log,
-		rooms: []room{foyer},
-		done:  make(chan bool),
+		Log:     log,
+		rooms:   []room{foyer},
+		done:    make(chan bool),
+		Inbox:   make(chan Request),
+		players: make(map[string]*player),
 	}
 }
 
@@ -38,11 +42,25 @@ func (w *World) Run(hz int) {
 	w.Info("starting world with a tick rate of %dhz, frame duration of %v", hz, period)
 	ticker := time.NewTicker(period)
 	lastTick := time.Now()
+
 	for {
 		select {
+		case req := <-w.Inbox:
+			w.Info("read from inbox: %v", req)
+			if req.From == "" {
+				req.Wants.exec(w, "")
+				break
+			}
+			p, ok := w.players[req.From]
+			if !ok {
+				break
+			}
+			p.pending = append(p.pending, req)
+
 		case <-ticker.C:
 			w.tick(time.Since(lastTick))
 			lastTick = time.Now()
+
 		case <-w.done:
 			return
 		}
@@ -55,18 +73,18 @@ func (w *World) Stop() error {
 	return nil
 }
 
-func (w *World) SpawnPlayer(id int) int {
-	w.lastEntityID++
-	r := w.rooms[0]
-	w.Info("spawning player with id: %d into room %q", id, r.name)
-	t := &r.tiles[0]
-	p := player{
-		Log:      w.Child("players").Child(strconv.Itoa(id)),
-		entityID: w.lastEntityID,
-	}
-	t.addEntity(&p)
-	return p.entityID
-}
+// func (w *World) SpawnPlayer(id int) int {
+// 	w.lastEntityID++
+// 	r := w.rooms[0]
+// 	w.Info("spawning player with id: %d into room %q", id, r.name)
+// 	t := &r.tiles[0]
+// 	p := player{
+// 		Log:      w.Child("players").Child(strconv.Itoa(id)),
+// 		entityID: w.lastEntityID,
+// 	}
+// 	t.addEntity(&p)
+// 	return p.entityID
+// }
 
 func (w *World) DespawnPlayer(id int) {
 	w.Info("despawning player with id: %d", id)

@@ -17,6 +17,15 @@ func (e Error) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Error())
 }
 
+func (e *Error) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	*e = Errorf(s)
+	return nil
+}
+
 func Errorf(t string, args ...interface{}) Error {
 	return Error{val: fmt.Errorf(t, args...)}
 }
