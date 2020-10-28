@@ -96,17 +96,17 @@ func (sn *session) read() {
 				sn.Name = v.Name
 				sn.world.Inbox <- sim.Request{
 					From: sn.Name,
-					Wants: sim.SpawnPlayer{
+					Seq:  req.Seq,
+					Wants: &sim.SpawnPlayer{
 						Outbox: sn.outbox,
 					},
 				}
-				sn.outbox <- wire.Response{req.Seq, wire.OK{}}
 			case sim.Effect:
 				sn.world.Inbox <- sim.Request{
 					From:  sn.Name,
+					Seq:   req.Seq,
 					Wants: v,
 				}
-				sn.outbox <- wire.Response{req.Seq, wire.OK{}}
 			default:
 				sn.outbox <- wire.ErrorResponse(req.Seq, "not sure how to handle that")
 			}

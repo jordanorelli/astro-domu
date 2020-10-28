@@ -108,7 +108,6 @@ func (s *Server) dropSession(sn *session) {
 
 	close(sn.done)
 	delete(s.sessions, sn.id)
-	s.world.DespawnPlayer(sn.entityID)
 	s.waitOnSessions.Add(-1)
 
 	s.Info("dropped session %d after %v time connected, %d sessions active", sn.id, time.Since(sn.start), len(s.sessions))

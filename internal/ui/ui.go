@@ -118,7 +118,6 @@ func (ui *UI) handleUserInput() bool {
 			// someone else shut us down, so return false
 			return false
 		}
-		ui.Info("screen sees event: %v", e)
 
 		switch v := e.(type) {
 		case *tcell.EventKey:

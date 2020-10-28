@@ -3,6 +3,7 @@ package sim
 import (
 	"time"
 
+	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
 
@@ -19,12 +20,13 @@ type World struct {
 
 func NewWorld(log *blammo.Log) *World {
 	foyer := room{
-		Log:    log.Child("foyer"),
-		name:   "foyer",
-		origin: point{0, 0},
-		width:  10,
-		height: 10,
-		tiles:  make([]tile, 100),
+		Log:     log.Child("foyer"),
+		name:    "foyer",
+		origin:  point{0, 0},
+		width:   10,
+		height:  10,
+		tiles:   make([]tile, 100),
+		players: make(map[string]*player),
 	}
 	return &World{
 		Log:     log,
@@ -47,14 +49,27 @@ func (w *World) Run(hz int) {
 		select {
 		case req := <-w.Inbox:
 			w.Info("read from inbox: %v", req)
+
 			if req.From == "" {
-				req.Wants.exec(w, "")
+				w.Error("request has no from: %v", req)
 				break
 			}
+
+			if spawn, ok := req.Wants.(*SpawnPlayer); ok {
+				if _, ok := w.players[req.From]; ok {
+					spawn.Outbox <- wire.ErrorResponse(req.Seq, "a player is already logged in as %q", req.From)
+					break
+				}
+				spawn.exec(&w.rooms[0], req.From, req.Seq)
+				break
+			}
+
 			p, ok := w.players[req.From]
 			if !ok {
-				break
+				w.Error("received non login request of type %T from unknown player %q", req.Wants, req.From)
 			}
+			break
+
 			p.pending = append(p.pending, req)
 
 		case <-ticker.C:
@@ -71,32 +86,6 @@ func (w *World) Stop() error {
 	w.Info("stopping simulation")
 	w.done <- true
 	return nil
-}
-
-// func (w *World) SpawnPlayer(id int) int {
-// 	w.lastEntityID++
-// 	r := w.rooms[0]
-// 	w.Info("spawning player with id: %d into room %q", id, r.name)
-// 	t := &r.tiles[0]
-// 	p := player{
-// 		Log:      w.Child("players").Child(strconv.Itoa(id)),
-// 		entityID: w.lastEntityID,
-// 	}
-// 	t.addEntity(&p)
-// 	return p.entityID
-// }
-
-func (w *World) DespawnPlayer(id int) {
-	w.Info("despawning player with id: %d", id)
-	for _, r := range w.rooms {
-		for _, t := range r.tiles {
-			if e := t.removeEntity(id); e != nil {
-				w.Info("player removed from room %q", r.name)
-				return
-			}
-		}
-	}
-	w.Error("player was not found in any room")
 }
 
 func (w *World) tick(d time.Duration) {
