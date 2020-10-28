@@ -1,33 +1,25 @@
 package wire
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 )
 
 type Error struct {
-	val error
+	Message string `json:"message"`
+	parent  error
 }
 
-func (e Error) Error() string  { return e.val.Error() }
+func (e Error) Error() string  { return e.Message }
 func (e Error) NetTag() string { return "error" }
-func (e Error) Unwrap() error  { return e.val }
-
-func (e Error) MarshalJSON() ([]byte, error) {
-	return json.Marshal(e.Error())
-}
-
-func (e *Error) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
-	}
-	*e = Errorf(s)
-	return nil
-}
+func (e Error) Unwrap() error  { return e.parent }
 
 func Errorf(t string, args ...interface{}) Error {
-	return Error{val: fmt.Errorf(t, args...)}
+	err := fmt.Errorf(t, args...)
+	return Error{
+		Message: err.Error(),
+		parent:  errors.Unwrap(err),
+	}
 }
 
 func init() {
