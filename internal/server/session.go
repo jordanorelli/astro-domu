@@ -85,7 +85,7 @@ func (sn *session) read() {
 				sn.outbox <- wire.ErrorResponse(0, "unable to parse request: %v", err)
 				break
 			}
-			sn.outbox <- wire.NewResponse(req.Seq, wire.OK{})
+			sn.outbox <- wire.Response{req.Seq, wire.OK{}}
 		case websocket.BinaryMessage:
 			sn.outbox <- wire.ErrorResponse(0, "unable to parse binary frames")
 		}

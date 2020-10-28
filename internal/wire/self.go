@@ -7,3 +7,7 @@ type Self_Move struct {
 }
 
 func (Self_Move) NetTag() string { return "self/move" }
+
+func init() {
+	Register(func() Value { return new(Self_Move) })
+}

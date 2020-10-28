@@ -1,19 +1,45 @@
 package wire
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type Response struct {
-	Re   int         `json:"re,omitempty"`
-	Type string      `json:"type"`
-	Body interface{} `json:"body"`
+	Re   int
+	Body Value
 }
 
-func NewResponse(re int, v Value) Response {
-	return Response{
-		Re:   re,
-		Type: v.NetTag(),
-		Body: v,
+func (r Response) MarshalJSON() ([]byte, error) {
+	return json.Marshal([3]interface{}{r.Re, r.Body.NetTag(), r.Body})
+}
+
+func (r *Response) UnmarshalJSON(b []byte) error {
+	var parts [3]json.RawMessage
+	if err := json.Unmarshal(b, &parts); err != nil {
+		return err
 	}
+	if err := json.Unmarshal(parts[0], &r.Re); err != nil {
+		return err
+	}
+
+	var tag string
+	if err := json.Unmarshal(parts[1], &tag); err != nil {
+		return err
+	}
+
+	f, ok := registry[tag]
+	if !ok {
+		return fmt.Errorf("unknown tag: %q", tag)
+	}
+	v := f()
+	if err := json.Unmarshal(parts[2], v); err != nil {
+		return err
+	}
+	r.Body = v
+	return nil
 }
 
 func ErrorResponse(re int, t string, args ...interface{}) Response {
-	return NewResponse(re, Errorf(t, args...))
+	return Response{re, Errorf(t, args...)}
 }
