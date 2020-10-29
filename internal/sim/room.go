@@ -18,21 +18,29 @@ type room struct {
 }
 
 func (r *room) update(dt time.Duration) {
-	// announcements := make([]result, 0, 8)
-
 	for _, p := range r.players {
 		for _, req := range p.pending {
-			res := req.Wants.exec(r, p.name, req.Seq)
+			res := req.Wants.exec(r, p, req.Seq)
 			p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
 		}
 		p.pending = p.pending[0:0]
 	}
 
 	for _, t := range r.tiles {
-		for _, e := range t.contents {
-			e.update(dt)
+		if t.here != nil {
+			t.here.update(dt)
 		}
 	}
+}
+
+func (r *room) allEntities() []Entity {
+	all := make([]Entity, 0, 4)
+	for _, t := range r.tiles {
+		if t.here != nil {
+			all = append(all, *t.here)
+		}
+	}
+	return all
 }
 
 func (r *room) addPlayer(p *player) {

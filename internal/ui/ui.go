@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/exit"
 	"github.com/jordanorelli/astro-domu/internal/server"
+	"github.com/jordanorelli/astro-domu/internal/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
@@ -26,9 +27,23 @@ func (ui *UI) Run() {
 		return
 	}
 
-	ui.client.Send(server.Login{Name: ui.PlayerName})
+	res, err := ui.client.Send(server.Login{Name: ui.PlayerName})
+	if err != nil {
+		ui.Error("login error: %v", err)
+		return
+	}
 
-	ui.mode = &boxWalker{width: 10, height: 6}
+	welcome, ok := res.Body.(*sim.Welcome)
+	if !ok {
+		ui.Error("unexpected initial message of type %t", res.Body)
+		return
+	}
+	ui.Info("spawned into room %s", welcome.Room)
+
+	ui.mode = &roomDisplay{
+		width:  welcome.Size[0],
+		height: welcome.Size[1],
+	}
 	ui.Info("running ui")
 	if ui.handleUserInput() {
 		ui.Info("user requested close")

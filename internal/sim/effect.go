@@ -4,7 +4,7 @@ import "github.com/jordanorelli/astro-domu/internal/wire"
 
 type Effect interface {
 	wire.Value
-	exec(*room, string, int) result
+	exec(*room, *player, int) result
 }
 
 type result struct {

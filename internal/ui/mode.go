@@ -10,13 +10,13 @@ type Mode interface {
 	draw(*UI)
 }
 
-type boxWalker struct {
+type roomDisplay struct {
 	width    int
 	height   int
 	position point
 }
 
-func (m *boxWalker) handleEvent(ui *UI, e tcell.Event) bool {
+func (m *roomDisplay) handleEvent(ui *UI, e tcell.Event) bool {
 	switch v := e.(type) {
 	case *tcell.EventKey:
 		key := v.Key()
@@ -24,16 +24,16 @@ func (m *boxWalker) handleEvent(ui *UI, e tcell.Event) bool {
 			switch v.Rune() {
 			case 'w':
 				ui.client.Send(sim.Move{0, -1})
-				m.move(0, -1)
+				// m.move(0, -1)
 			case 'a':
 				ui.client.Send(sim.Move{-1, 0})
-				m.move(-1, 0)
+				// m.move(-1, 0)
 			case 's':
 				ui.client.Send(sim.Move{0, 1})
-				m.move(0, 1)
+				// m.move(0, 1)
 			case 'd':
 				ui.client.Send(sim.Move{1, 0})
-				m.move(1, 0)
+				// m.move(1, 0)
 			}
 		}
 	default:
@@ -42,12 +42,12 @@ func (m *boxWalker) handleEvent(ui *UI, e tcell.Event) bool {
 	return true
 }
 
-func (m *boxWalker) move(dx, dy int) {
+func (m *roomDisplay) move(dx, dy int) {
 	m.position.x = clamp(m.position.x+dx, 0, m.width-1)
 	m.position.y = clamp(m.position.y+dy, 0, m.height-1)
 }
 
-func (m *boxWalker) draw(ui *UI) {
+func (m *roomDisplay) draw(ui *UI) {
 	offset := point{1, 1}
 
 	// fill in background dots first
@@ -72,5 +72,5 @@ func (m *boxWalker) draw(ui *UI) {
 	}
 
 	// add all characters
-	ui.screen.SetContent(m.position.x+offset.x, m.position.y+offset.y, '@', nil, tcell.StyleDefault)
+	// ui.screen.SetContent(m.position.x+offset.x, m.position.y+offset.y, '@', nil, tcell.StyleDefault)
 }

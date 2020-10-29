@@ -60,7 +60,9 @@ func (w *World) Run(hz int) {
 					spawn.Outbox <- wire.ErrorResponse(req.Seq, "a player is already logged in as %q", req.From)
 					break
 				}
-				spawn.exec(&w.rooms[0], req.From, req.Seq)
+				spawn.exec(&w.rooms[0], nil, req.Seq)
+				p := w.rooms[0].players[req.From]
+				w.players[req.From] = p
 				break
 			}
 
@@ -68,7 +70,6 @@ func (w *World) Run(hz int) {
 			if !ok {
 				w.Error("received non login request of type %T from unknown player %q", req.Wants, req.From)
 			}
-			break
 
 			p.pending = append(p.pending, req)
 

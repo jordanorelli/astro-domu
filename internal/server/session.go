@@ -98,6 +98,7 @@ func (sn *session) read() {
 					From: sn.Name,
 					Seq:  req.Seq,
 					Wants: &sim.SpawnPlayer{
+						Name:   sn.Name,
 						Outbox: sn.outbox,
 					},
 				}
