@@ -75,6 +75,11 @@ func (c *Client) Send(v Value) (Response, error) {
 
 	select {
 	case <-done:
+		if p.err == nil {
+			if err, ok := p.res.Body.(error); ok {
+				return p.res, err
+			}
+		}
 		return p.res, p.err
 	case <-timeout.C:
 		return Response{}, fmt.Errorf("send timed out (2) after %v", d)

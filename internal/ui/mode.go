@@ -23,17 +23,13 @@ func (m *roomDisplay) handleEvent(ui *UI, e tcell.Event) bool {
 		if key == tcell.KeyRune {
 			switch v.Rune() {
 			case 'w':
-				go ui.client.Send(sim.Move{0, -1})
-				// m.move(0, -1)
+				m.move(ui, 0, -1)
 			case 'a':
-				go ui.client.Send(sim.Move{-1, 0})
-				// m.move(-1, 0)
+				m.move(ui, -1, 0)
 			case 's':
-				go ui.client.Send(sim.Move{0, 1})
-				// m.move(0, 1)
+				m.move(ui, 0, 1)
 			case 'd':
-				go ui.client.Send(sim.Move{1, 0})
-				// m.move(1, 0)
+				m.move(ui, 1, 0)
 			}
 		}
 	default:
@@ -42,9 +38,16 @@ func (m *roomDisplay) handleEvent(ui *UI, e tcell.Event) bool {
 	return true
 }
 
-func (m *roomDisplay) move(dx, dy int) {
-	m.position.x = clamp(m.position.x+dx, 0, m.width-1)
-	m.position.y = clamp(m.position.y+dy, 0, m.height-1)
+func (m *roomDisplay) move(ui *UI, dx, dy int) {
+	reply, err := ui.client.Send(sim.Move{dx, dy})
+	if err != nil {
+		return
+	}
+	e := reply.Body.(*sim.Entity)
+	m.position.x = e.Position[0]
+	m.position.y = e.Position[1]
+	// m.position.x = clamp(m.position.x+dx, 0, m.width-1)
+	// m.position.y = clamp(m.position.y+dy, 0, m.height-1)
 }
 
 func (m *roomDisplay) draw(ui *UI) {
@@ -72,5 +75,5 @@ func (m *roomDisplay) draw(ui *UI) {
 	}
 
 	// add all characters
-	// ui.screen.SetContent(m.position.x+offset.x, m.position.y+offset.y, '@', nil, tcell.StyleDefault)
+	ui.screen.SetContent(m.position.x+offset.x, m.position.y+offset.y, '@', nil, tcell.StyleDefault)
 }
