@@ -6,7 +6,7 @@ import (
 	"github.com/jordanorelli/astro-domu/internal/wire"
 )
 
-type Mode interface {
+type view interface {
 	handleEvent(*UI, tcell.Event) bool
 	notify(wire.Value)
 	draw(*UI)

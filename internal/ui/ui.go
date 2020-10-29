@@ -15,7 +15,7 @@ type UI struct {
 	*blammo.Log
 	PlayerName string
 	screen     tcell.Screen
-	mode       Mode
+	view       view
 	client     *wire.Client
 }
 
@@ -44,7 +44,7 @@ func (ui *UI) Run() {
 	for _, e := range welcome.Contents {
 		entities[e.ID] = e
 	}
-	ui.mode = &roomDisplay{
+	ui.view = &roomDisplay{
 		width:    welcome.Size[0],
 		height:   welcome.Size[1],
 		entities: entities,
@@ -102,8 +102,8 @@ func (ui *UI) clearTerminal() {
 func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	for n := range c {
 		ui.Info("ignoring notification: %v", n)
-		ui.mode.notify(n.Body)
-		ui.mode.draw(ui)
+		ui.view.notify(n.Body)
+		ui.view.draw(ui)
 		ui.screen.Show()
 	}
 	ui.Info("notifications channel is closed so we must be done")
@@ -132,7 +132,7 @@ func (ui *UI) writeString(x, y int, s string, style tcell.Style) {
 
 func (ui *UI) handleUserInput() bool {
 	ui.screen.Clear()
-	ui.mode.draw(ui)
+	ui.view.draw(ui)
 
 	for {
 		e := ui.screen.PollEvent()
@@ -152,9 +152,9 @@ func (ui *UI) handleUserInput() bool {
 			}
 		}
 
-		ui.mode.handleEvent(ui, e)
+		ui.view.handleEvent(ui, e)
 		ui.screen.Clear()
-		ui.mode.draw(ui)
+		ui.view.draw(ui)
 		ui.screen.Show()
 	}
 }
