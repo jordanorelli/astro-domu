@@ -23,16 +23,16 @@ func (m *roomDisplay) handleEvent(ui *UI, e tcell.Event) bool {
 		if key == tcell.KeyRune {
 			switch v.Rune() {
 			case 'w':
-				ui.client.Send(sim.Move{0, -1})
+				go ui.client.Send(sim.Move{0, -1})
 				// m.move(0, -1)
 			case 'a':
-				ui.client.Send(sim.Move{-1, 0})
+				go ui.client.Send(sim.Move{-1, 0})
 				// m.move(-1, 0)
 			case 's':
-				ui.client.Send(sim.Move{0, 1})
+				go ui.client.Send(sim.Move{0, 1})
 				// m.move(0, 1)
 			case 'd':
-				ui.client.Send(sim.Move{1, 0})
+				go ui.client.Send(sim.Move{1, 0})
 				// m.move(1, 0)
 			}
 		}

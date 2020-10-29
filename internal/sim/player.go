@@ -34,11 +34,8 @@ func (m *Move) exec(r *room, p *player, seq int) result {
 		return result{reply: wire.Errorf("target cell (%d, %d) is occupied", target[0], target[1])}
 	}
 	p.entity.Position = target
-	return result{reply: wire.OK{}}
+	return result{reply: p.entity, announce: p.entity}
 }
-
-// type pawn struct {
-// }
 
 // SpawnPlayer is a request to spawn a player
 type SpawnPlayer struct {

@@ -2,6 +2,8 @@ package sim
 
 import (
 	"time"
+
+	"github.com/jordanorelli/astro-domu/internal/wire"
 )
 
 type Entity struct {
@@ -9,6 +11,12 @@ type Entity struct {
 	Position [2]int `json:"pos"`
 	Glyph    rune   `json:"glyph"`
 	behavior
+}
+
+func (Entity) NetTag() string { return "entity" }
+
+func init() {
+	wire.Register(func() wire.Value { return new(Entity) })
 }
 
 type behavior interface {
