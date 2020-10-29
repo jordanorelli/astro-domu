@@ -23,3 +23,7 @@ type behavior interface {
 	// update is the standard tick function
 	update(time.Duration)
 }
+
+type doNothing struct{}
+
+func (d doNothing) update(time.Duration) {}

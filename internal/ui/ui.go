@@ -40,9 +40,14 @@ func (ui *UI) Run() {
 	}
 	ui.Info("spawned into room %s", welcome.Room)
 
+	entities := make(map[int]sim.Entity, len(welcome.Contents))
+	for _, e := range welcome.Contents {
+		entities[e.ID] = e
+	}
 	ui.mode = &roomDisplay{
-		width:  welcome.Size[0],
-		height: welcome.Size[1],
+		width:    welcome.Size[0],
+		height:   welcome.Size[1],
+		entities: entities,
 	}
 	ui.Info("running ui")
 	if ui.handleUserInput() {
@@ -97,6 +102,9 @@ func (ui *UI) clearTerminal() {
 func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	for n := range c {
 		ui.Info("ignoring notification: %v", n)
+		ui.mode.notify(n.Body)
+		ui.mode.draw(ui)
+		ui.screen.Show()
 	}
 	ui.Info("notifications channel is closed so we must be done")
 	ui.Info("clearing and finalizing screen from notifications goroutine")

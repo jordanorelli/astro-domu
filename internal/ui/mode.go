@@ -3,17 +3,19 @@ package ui
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/sim"
+	"github.com/jordanorelli/astro-domu/internal/wire"
 )
 
 type Mode interface {
 	handleEvent(*UI, tcell.Event) bool
+	notify(wire.Value)
 	draw(*UI)
 }
 
 type roomDisplay struct {
 	width    int
 	height   int
-	position point
+	entities map[int]sim.Entity
 }
 
 func (m *roomDisplay) handleEvent(ui *UI, e tcell.Event) bool {
@@ -38,16 +40,19 @@ func (m *roomDisplay) handleEvent(ui *UI, e tcell.Event) bool {
 	return true
 }
 
+func (m *roomDisplay) notify(v wire.Value) {
+	if e, ok := v.(*sim.Entity); ok {
+		m.entities[e.ID] = *e
+	}
+}
+
 func (m *roomDisplay) move(ui *UI, dx, dy int) {
 	reply, err := ui.client.Send(sim.Move{dx, dy})
 	if err != nil {
 		return
 	}
 	e := reply.Body.(*sim.Entity)
-	m.position.x = e.Position[0]
-	m.position.y = e.Position[1]
-	// m.position.x = clamp(m.position.x+dx, 0, m.width-1)
-	// m.position.y = clamp(m.position.y+dy, 0, m.height-1)
+	m.entities[e.ID] = *e
 }
 
 func (m *roomDisplay) draw(ui *UI) {
@@ -74,6 +79,7 @@ func (m *roomDisplay) draw(ui *UI) {
 		ui.screen.SetContent(offset.x+m.width, y+offset.y, '│', nil, tcell.StyleDefault)
 	}
 
-	// add all characters
-	ui.screen.SetContent(m.position.x+offset.x, m.position.y+offset.y, '@', nil, tcell.StyleDefault)
+	for _, e := range m.entities {
+		ui.screen.SetContent(e.Position[0]+offset.x, e.Position[1]+offset.y, e.Glyph, nil, tcell.StyleDefault)
+	}
 }

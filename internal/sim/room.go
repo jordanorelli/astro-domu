@@ -22,6 +22,12 @@ func (r *room) update(dt time.Duration) {
 		for _, req := range p.pending {
 			res := req.Wants.exec(r, p, req.Seq)
 			p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
+			for _, p2 := range r.players {
+				if p2 == p {
+					continue
+				}
+				p2.outbox <- wire.Response{Body: res.reply}
+			}
 		}
 		p.pending = p.pending[0:0]
 	}

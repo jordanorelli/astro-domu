@@ -33,7 +33,9 @@ func (m *Move) exec(r *room, p *player, seq int) result {
 	if r.tiles[n].here != nil {
 		return result{reply: wire.Errorf("target cell (%d, %d) is occupied", target[0], target[1])}
 	}
+	r.tiles[p.entity.Position[1]*r.width+p.entity.Position[0]].here = nil
 	p.entity.Position = target
+	r.tiles[n].here = p.entity
 	return result{reply: p.entity, announce: p.entity}
 }
 
@@ -44,6 +46,8 @@ type SpawnPlayer struct {
 	queued bool
 }
 
+var lastEntityID = 0
+
 func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
 	if !s.queued {
 		r.Info("spawn player requested for: %s", s.Name)
@@ -53,6 +57,7 @@ func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
 			return result{}
 		}
 
+		lastEntityID++
 		p := &player{
 			Log:     r.Log.Child("players").Child(s.Name),
 			room:    r,
@@ -60,13 +65,15 @@ func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
 			outbox:  s.Outbox,
 			pending: make([]Request, 0, 32),
 			entity: &Entity{
-				ID:       999,
+				ID:       lastEntityID,
 				Position: [2]int{0, 0},
 				Glyph:    '@',
+				behavior: doNothing{},
 			},
 		}
 		p.pending = append(p.pending, Request{Seq: seq, From: s.Name, Wants: s})
 		r.players[s.Name] = p
+		r.tiles[0].here = p.entity
 		s.queued = true
 		return result{}
 	}
