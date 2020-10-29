@@ -1,4 +1,4 @@
-package ui
+package app
 
 // buffer is a rect of tiles
 type buffer struct {

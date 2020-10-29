@@ -1,4 +1,4 @@
-package ui
+package app
 
 type point struct{ x, y int }
 

@@ -5,9 +5,9 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/jordanorelli/astro-domu/internal/app"
 	"github.com/jordanorelli/astro-domu/internal/exit"
 	"github.com/jordanorelli/astro-domu/internal/server"
-	"github.com/jordanorelli/astro-domu/internal/ui"
 	"github.com/jordanorelli/blammo"
 )
 
@@ -62,9 +62,9 @@ func runClient(name string) {
 		log.Info("total play time: %v", finished.Sub(start))
 	}()
 
-	ui := ui.UI{
+	app := app.UI{
 		Log:        log.Child("ui"),
 		PlayerName: name,
 	}
-	ui.Run()
+	app.Run()
 }
