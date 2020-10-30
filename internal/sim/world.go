@@ -28,6 +28,12 @@ func NewWorld(log *blammo.Log) *World {
 		tiles:   make([]tile, 100),
 		players: make(map[string]*player),
 	}
+	foyer.tiles[55].here = &Entity{
+		ID:       777,
+		Position: [2]int{5, 5},
+		Glyph:    'd',
+		behavior: doNothing{},
+	}
 	return &World{
 		Log:     log,
 		rooms:   []room{foyer},
