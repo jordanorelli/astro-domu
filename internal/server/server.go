@@ -12,7 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/jordanorelli/astro-domu/internal/errors"
-	"github.com/jordanorelli/astro-domu/internal/sim"
+	"github.com/jordanorelli/astro-domu/internal/server/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )

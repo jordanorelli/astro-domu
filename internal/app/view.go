@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/jordanorelli/astro-domu/internal/sim"
+	"github.com/jordanorelli/astro-domu/internal/server/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 )
 
