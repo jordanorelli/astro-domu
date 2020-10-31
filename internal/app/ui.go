@@ -5,8 +5,6 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/exit"
-	"github.com/jordanorelli/astro-domu/internal/server"
-	"github.com/jordanorelli/astro-domu/internal/server/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
@@ -27,27 +25,28 @@ func (ui *UI) Run() {
 		return
 	}
 
-	res, err := ui.client.Send(server.Login{Name: ui.PlayerName})
+	res, err := ui.client.Send(wire.Login{Name: ui.PlayerName})
 	if err != nil {
 		ui.Error("login error: %v", err)
 		return
 	}
 
-	welcome, ok := res.Body.(*sim.Welcome)
+	welcome, ok := res.Body.(*wire.Welcome)
 	if !ok {
 		ui.Error("unexpected initial message of type %t", res.Body)
 		return
 	}
 	ui.Info("spawned into room %s", welcome.Room)
 
-	entities := make(map[int]sim.Entity, len(welcome.Contents))
-	for _, e := range welcome.Contents {
-		entities[e.ID] = e
-	}
-	ui.view = &roomDisplay{
-		width:    welcome.Size[0],
-		height:   welcome.Size[1],
-		entities: entities,
+	// entities := make(map[int]sim.Entity, len(welcome.Contents))
+	// for _, e := range welcome.Contents {
+	// 	entities[e.ID] = e
+	// }
+	ui.view = &gameView{
+		Log:    ui.Child("game-view"),
+		width:  welcome.Room.Width,
+		height: welcome.Room.Height,
+		// entities: entities,
 	}
 	ui.Info("running ui")
 	if ui.handleUserInput() {

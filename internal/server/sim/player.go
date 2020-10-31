@@ -1,6 +1,7 @@
 package sim
 
 import (
+	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
@@ -12,31 +13,35 @@ type player struct {
 	name    string
 	outbox  chan wire.Response
 	pending []Request
-	entity  *Entity
+	entity  *entity
 }
 
-type Move [2]int
+type Move math.Vec
 
 func (Move) NetTag() string { return "move" }
 
 func (m *Move) exec(r *room, p *player, seq int) result {
 	pos := p.entity.Position
-	target := [2]int{pos[0] + m[0], pos[1] + m[1]}
+	target := pos.Add(math.Vec(*m))
 	p.Info("running move for player %s from %v to %v", p.name, *m, target)
-	if target[0] >= r.width || target[0] < 0 {
-		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target[0], target[1])}
+	if target.X >= r.width || target.X < 0 {
+		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target.X, target.Y)}
 	}
-	if target[1] >= r.height || target[1] < 0 {
-		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target[0], target[1])}
+	if target.Y >= r.height || target.Y < 0 {
+		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target.X, target.Y)}
 	}
-	n := target[1]*r.width + target[0]
+	n := target.X*r.width + target.Y
 	if r.tiles[n].here != nil {
-		return result{reply: wire.Errorf("target cell (%d, %d) is occupied", target[0], target[1])}
+		return result{reply: wire.Errorf("target cell (%d, %d) is occupied", target.X, target.Y)}
 	}
-	r.tiles[p.entity.Position[1]*r.width+p.entity.Position[0]].here = nil
+	r.tiles[p.entity.Position.X*r.width+p.entity.Position.Y].here = nil
 	p.entity.Position = target
 	r.tiles[n].here = p.entity
-	return result{reply: p.entity, announce: p.entity}
+	e := wire.Entity{
+		Position: p.entity.Position,
+		Glyph:    '@',
+	}
+	return result{reply: e, announce: e}
 }
 
 // SpawnPlayer is a request to spawn a player
@@ -64,9 +69,9 @@ func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
 			name:    s.Name,
 			outbox:  s.Outbox,
 			pending: make([]Request, 0, 32),
-			entity: &Entity{
+			entity: &entity{
 				ID:       lastEntityID,
-				Position: [2]int{0, 0},
+				Position: math.Vec{0, 0},
 				Glyph:    '@',
 				behavior: doNothing{},
 			},
@@ -78,13 +83,11 @@ func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
 		return result{}
 	}
 
-	return result{
-		reply: Welcome{
-			Room:     r.name,
-			Size:     [2]int{r.width, r.height},
-			Contents: r.allEntities(),
-		},
-	}
+	var welcome wire.Welcome
+	welcome.Room.Width = r.width
+	welcome.Room.Height = r.height
+	welcome.Room.Origin = math.Vec{0, 0}
+	return result{reply: welcome}
 }
 
 func (SpawnPlayer) NetTag() string { return "player/spawn" }
@@ -97,33 +100,7 @@ type PlayerSpawned struct {
 
 func (PlayerSpawned) NetTag() string { return "player/spawned" }
 
-type Welcome struct {
-	Room     string   `json:"room"`
-	Size     [2]int   `json:"size"`
-	Contents []Entity `json:"contents"`
-}
-
-/*
-
-{
-	"name": "foyer",
-	"width": 10,
-	"height": 10,
-	"contents": [
-	  [5, 3, 10],
-	],
-	"entities": [
-	  [3, "pawn", {"name": "bones"}],
-	  [10, "pawn", {"name": "steve"}]
-	]
-}
-
-*/
-
-func (Welcome) NetTag() string { return "player/welcome" }
-
 func init() {
 	wire.Register(func() wire.Value { return new(Move) })
-	wire.Register(func() wire.Value { return new(Welcome) })
 	// wire.Register(func() wire.Value { return new(pawn) })
 }

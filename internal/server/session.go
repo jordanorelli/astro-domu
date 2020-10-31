@@ -92,7 +92,7 @@ func (sn *session) read() {
 			sn.Info("received message of type %T", req.Body)
 
 			switch v := req.Body.(type) {
-			case *Login:
+			case *wire.Login:
 				sn.Name = v.Name
 				sn.world.Inbox <- sim.Request{
 					From: sn.Name,
@@ -140,14 +140,4 @@ func (sn *session) sendResponse(res wire.Response) error {
 	}
 	sn.Child("sent-frame").Info(string(payload))
 	return nil
-}
-
-type Login struct {
-	Name string `json:"name"`
-}
-
-func (Login) NetTag() string { return "login" }
-
-func init() {
-	wire.Register(func() wire.Value { return new(Login) })
 }

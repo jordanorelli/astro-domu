@@ -3,6 +3,7 @@ package sim
 import (
 	"time"
 
+	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
@@ -28,9 +29,9 @@ func NewWorld(log *blammo.Log) *World {
 		tiles:   make([]tile, 100),
 		players: make(map[string]*player),
 	}
-	foyer.tiles[55].here = &Entity{
+	foyer.tiles[55].here = &entity{
 		ID:       777,
-		Position: [2]int{5, 5},
+		Position: math.Vec{5, 5},
 		Glyph:    'd',
 		behavior: doNothing{},
 	}

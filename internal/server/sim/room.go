@@ -39,8 +39,8 @@ func (r *room) update(dt time.Duration) {
 	}
 }
 
-func (r *room) allEntities() []Entity {
-	all := make([]Entity, 0, 4)
+func (r *room) allEntities() []entity {
+	all := make([]entity, 0, 4)
 	for _, t := range r.tiles {
 		if t.here != nil {
 			all = append(all, *t.here)
