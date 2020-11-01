@@ -36,12 +36,7 @@ func (m *Move) exec(r *room, p *player, seq int) result {
 
 	currentTile.here, nextTile.here = nil, p.avatar
 	p.avatar.Position = target
-	e := wire.Entity{
-		ID:       p.avatar.ID,
-		Position: p.avatar.Position,
-		Glyph:    p.avatar.Glyph,
-	}
-	return result{reply: e, announce: e}
+	return result{reply: wire.OK{}}
 }
 
 // SpawnPlayer is a request to spawn a player
@@ -87,9 +82,9 @@ func (s *SpawnPlayer) exec(r *room, p *player, seq int) result {
 		Rooms:   make(map[string]wire.Room),
 		Players: make(map[string]wire.Player),
 	}
-	ents := make(map[int]*wire.Entity)
+	ents := make(map[int]wire.Entity)
 	for id, e := range r.allEntities() {
-		ents[id] = &wire.Entity{
+		ents[id] = wire.Entity{
 			ID:       id,
 			Position: e.Position,
 			Glyph:    e.Glyph,
@@ -109,11 +104,6 @@ func (s *SpawnPlayer) exec(r *room, p *player, seq int) result {
 	}
 	return result{
 		reply: welcome,
-		announce: wire.Entity{
-			ID:       p.avatar.ID,
-			Position: p.avatar.Position,
-			Glyph:    p.avatar.Glyph,
-		},
 	}
 }
 

@@ -37,14 +37,8 @@ func (v *gameView) handleEvent(ui *UI, e tcell.Event) bool {
 }
 
 func (v *gameView) move(ui *UI, dx, dy int) {
-	reply, err := ui.client.Send(sim.Move{dx, dy})
-	if err != nil {
-		return
-	}
-
-	e := reply.Body.(*wire.Entity)
-	v.room.Entities[e.ID] = e
-	v.me = e
+	// fuck lol
+	go ui.client.Send(sim.Move{dx, dy})
 }
 
 func (v *gameView) draw(ui *UI) {

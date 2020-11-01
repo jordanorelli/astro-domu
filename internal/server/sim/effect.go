@@ -8,6 +8,5 @@ type Effect interface {
 }
 
 type result struct {
-	reply    wire.Value
-	announce wire.Value
+	reply wire.Value
 }

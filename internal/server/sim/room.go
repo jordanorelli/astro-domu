@@ -25,14 +25,10 @@ func (r *room) update(dt time.Duration) {
 		p.pending = nil
 
 		res := req.Wants.exec(r, p, req.Seq)
-		p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
-		if res.announce != nil {
-			for _, p2 := range r.players {
-				if p2 == p {
-					continue
-				}
-				p2.outbox <- wire.Response{Body: res.announce}
-			}
+		if res.reply != nil {
+			p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
+		} else {
+			p.outbox <- wire.Response{Re: req.Seq, Body: wire.OK{}}
 		}
 	}
 
@@ -41,15 +37,36 @@ func (r *room) update(dt time.Duration) {
 			t.here.update(dt)
 		}
 	}
+
+	frame := wire.Frame{
+		Entities: r.allEntities(),
+		Players:  r.playerAvatars(),
+	}
+
+	for _, p := range r.players {
+		p.outbox <- wire.Response{Body: frame}
+	}
 }
 
-func (r *room) allEntities() map[int]*entity {
-	all := make(map[int]*entity, 4)
+func (r *room) allEntities() map[int]wire.Entity {
+	all := make(map[int]wire.Entity, 4)
 	for _, t := range r.tiles {
 		if t.here != nil {
 			e := t.here
-			all[e.ID] = e
+			all[e.ID] = wire.Entity{
+				ID:       e.ID,
+				Position: e.Position,
+				Glyph:    e.Glyph,
+			}
 		}
+	}
+	return all
+}
+
+func (r *room) playerAvatars() map[string]int {
+	all := make(map[string]int, len(r.players))
+	for nick, p := range r.players {
+		all[nick] = p.avatar.ID
 	}
 	return all
 }

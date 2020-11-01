@@ -8,5 +8,5 @@ import (
 type Room struct {
 	Name        string `json:"name"`
 	math.Bounds `json:"bounds"`
-	Entities    map[int]*Entity `json:"entities"`
+	Entities    map[int]Entity `json:"entities"`
 }

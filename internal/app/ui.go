@@ -22,6 +22,8 @@ func (ui *UI) Run() {
 	ui.setupTerminal()
 	defer ui.clearTerminal()
 
+	ui.room = new(wire.Room)
+
 	if err := ui.connect(); err != nil {
 		return
 	}
@@ -44,7 +46,11 @@ func (ui *UI) Run() {
 	ui.view = &gameView{
 		Log:  ui.Child("game-view"),
 		room: &room,
-		me:   room.Entities[meta.Avatar],
+		me: &wire.Entity{
+			ID:       meta.Avatar,
+			Glyph:    room.Entities[meta.Avatar].Glyph,
+			Position: room.Entities[meta.Avatar].Position,
+		},
 	}
 
 	ui.Info("running ui")
@@ -100,8 +106,10 @@ func (ui *UI) clearTerminal() {
 func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	for n := range c {
 		if ui.handleNotification(n.Body) {
-			ui.view.draw(ui)
-			ui.screen.Show()
+			if ui.view != nil {
+				ui.view.draw(ui)
+				ui.screen.Show()
+			}
 		}
 	}
 	ui.Info("notifications channel is closed so we must be done")
@@ -115,7 +123,14 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 	switch n := v.(type) {
 
 	case *wire.Entity:
-		ui.room.Entities[n.ID] = n
+		ui.room.Entities[n.ID] = *n
+		return true
+
+	case *wire.Frame:
+		if ui.room == nil {
+			ui.room = new(wire.Room)
+		}
+		ui.room.Entities = n.Entities
 		return true
 
 	default:
