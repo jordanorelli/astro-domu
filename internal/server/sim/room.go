@@ -10,9 +10,8 @@ import (
 
 type room struct {
 	*blammo.Log
-	name    string
-	origin  point
-	bounds  math.Bounds
+	name string
+	math.Bounds
 	tiles   []tile
 	players map[string]*player
 }
@@ -68,9 +67,9 @@ func (r *room) removePlayer(name string) bool {
 }
 
 func (r *room) getTile(pos math.Vec) *tile {
-	if !r.bounds.Contains(pos) {
+	if !r.Contains(pos) {
 		return nil
 	}
-	n := pos.X*r.bounds.Width() + pos.Y
+	n := pos.X*r.Width + pos.Y
 	return &r.tiles[n]
 }

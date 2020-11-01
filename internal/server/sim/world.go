@@ -24,8 +24,7 @@ func NewWorld(log *blammo.Log) *World {
 	foyer := room{
 		Log:     log.Child("foyer"),
 		name:    "foyer",
-		origin:  point{0, 0},
-		bounds:  bounds,
+		Bounds:  math.CreateBounds(10, 10),
 		tiles:   make([]tile, bounds.Area()),
 		players: make(map[string]*player),
 	}
@@ -35,6 +34,7 @@ func NewWorld(log *blammo.Log) *World {
 		Glyph:    'd',
 		behavior: doNothing{},
 	}
+	log.Info("created foyer with bounds: %#v having width: %d height: %d area: %d", foyer.Bounds, foyer.Width, foyer.Height, foyer.Area())
 	return &World{
 		Log:     log,
 		rooms:   []room{foyer},

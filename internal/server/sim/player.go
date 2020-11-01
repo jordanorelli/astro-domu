@@ -24,7 +24,7 @@ func (m *Move) exec(r *room, p *player, seq int) result {
 	pos := p.avatar.Position
 	target := pos.Add(math.Vec(*m))
 	p.Info("running move for player %s from %v to %v", p.name, *m, target)
-	if !p.room.bounds.Contains(target) {
+	if !p.room.Contains(target) {
 		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target.X, target.Y)}
 	}
 
@@ -97,7 +97,7 @@ func (s *SpawnPlayer) exec(r *room, p *player, seq int) result {
 	}
 	welcome.Rooms[r.name] = wire.Room{
 		Name:     r.name,
-		Bounds:   r.bounds,
+		Bounds:   r.Bounds,
 		Entities: ents,
 	}
 	for _, p := range r.players {
