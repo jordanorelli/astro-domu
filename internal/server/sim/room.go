@@ -19,19 +19,22 @@ type room struct {
 
 func (r *room) update(dt time.Duration) {
 	for _, p := range r.players {
-		for _, req := range p.pending {
-			res := req.Wants.exec(r, p, req.Seq)
-			p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
-			if res.announce != nil {
-				for _, p2 := range r.players {
-					if p2 == p {
-						continue
-					}
-					p2.outbox <- wire.Response{Body: res.announce}
+		if p.pending == nil {
+			continue
+		}
+		req := p.pending
+		p.pending = nil
+
+		res := req.Wants.exec(r, p, req.Seq)
+		p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
+		if res.announce != nil {
+			for _, p2 := range r.players {
+				if p2 == p {
+					continue
 				}
+				p2.outbox <- wire.Response{Body: res.announce}
 			}
 		}
-		p.pending = p.pending[0:0]
 	}
 
 	for _, t := range r.tiles {

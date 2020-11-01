@@ -24,3 +24,21 @@ func (v *Vec) UnmarshalJSON(b []byte) error {
 }
 
 func (v Vec) Add(v2 Vec) Vec { return Vec{v.X + v2.X, v.Y + v2.Y} }
+
+func (v Vec) Unit() Vec {
+	var out Vec
+	switch {
+	case v.X < 0:
+		out.X = -1
+	case v.X > 0:
+		out.X = 1
+	}
+
+	switch {
+	case v.Y < 0:
+		out.Y = -1
+	case v.Y > 0:
+		out.Y = 1
+	}
+	return out
+}

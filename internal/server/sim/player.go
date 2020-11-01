@@ -12,7 +12,7 @@ type player struct {
 	*room
 	name    string
 	outbox  chan wire.Response
-	pending []Request
+	pending *Request
 	avatar  *entity
 }
 
@@ -70,14 +70,13 @@ func (s *SpawnPlayer) exec(r *room, p *player, seq int) result {
 			behavior: doNothing{},
 		}
 		p := &player{
-			Log:     r.Log.Child("players").Child(s.Name),
-			room:    r,
-			name:    s.Name,
-			outbox:  s.Outbox,
-			pending: make([]Request, 0, 32),
-			avatar:  avatar,
+			Log:    r.Log.Child("players").Child(s.Name),
+			room:   r,
+			name:   s.Name,
+			outbox: s.Outbox,
+			avatar: avatar,
 		}
-		p.pending = append(p.pending, Request{Seq: seq, From: s.Name, Wants: s})
+		p.pending = &Request{Seq: seq, From: s.Name, Wants: s}
 		r.players[s.Name] = p
 		r.tiles[0].here = p.avatar
 		s.queued = true

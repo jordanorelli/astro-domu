@@ -78,7 +78,11 @@ func (w *World) Run(hz int) {
 				w.Error("received non login request of type %T from unknown player %q", req.Wants, req.From)
 			}
 
-			p.pending = append(p.pending, req)
+			if p.pending == nil {
+				p.pending = &req
+			} else {
+				p.outbox <- wire.ErrorResponse(req.Seq, "you already have a request for this frame")
+			}
 
 		case <-ticker.C:
 			w.tick(time.Since(lastTick))

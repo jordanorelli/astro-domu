@@ -86,7 +86,7 @@ func (sn *session) read() {
 			var req wire.Request
 			if err := json.Unmarshal(b, &req); err != nil {
 				sn.Error("unable to parse request: %v", err)
-				sn.outbox <- wire.ErrorResponse(0, "unable to parse request: %v", err)
+				sn.outbox <- wire.ErrorResponse(req.Seq, "unable to parse request: %v", err)
 				break
 			}
 			sn.Info("received message of type %T", req.Body)
