@@ -53,7 +53,7 @@ type SpawnPlayer struct {
 
 var lastEntityID = 0
 
-func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
+func (s *SpawnPlayer) exec(r *room, p *player, seq int) result {
 	if !s.queued {
 		r.Info("spawn player requested for: %s", s.Name)
 
@@ -108,7 +108,14 @@ func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
 			Room:   r.name,
 		}
 	}
-	return result{reply: welcome}
+	return result{
+		reply: welcome,
+		announce: wire.Entity{
+			ID:       p.avatar.ID,
+			Position: p.avatar.Position,
+			Glyph:    p.avatar.Glyph,
+		},
+	}
 }
 
 func (SpawnPlayer) NetTag() string { return "player/spawn" }
