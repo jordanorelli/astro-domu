@@ -20,13 +20,13 @@ type World struct {
 }
 
 func NewWorld(log *blammo.Log) *World {
+	bounds := math.CreateBounds(10, 10)
 	foyer := room{
 		Log:     log.Child("foyer"),
 		name:    "foyer",
 		origin:  point{0, 0},
-		width:   10,
-		height:  10,
-		tiles:   make([]tile, 100),
+		bounds:  bounds,
+		tiles:   make([]tile, bounds.Area()),
 		players: make(map[string]*player),
 	}
 	foyer.tiles[55].here = &entity{

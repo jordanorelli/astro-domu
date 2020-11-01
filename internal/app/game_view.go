@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/gdamore/tcell/v2"
+	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/server/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
@@ -9,9 +10,12 @@ import (
 
 type gameView struct {
 	*blammo.Log
-	width  int
-	height int
-	// entities map[int]wire.Entity
+	roomName    string
+	width       int
+	height      int
+	me          wire.Entity
+	allRooms    map[string]wire.Room
+	allEntities map[int]wire.Entity
 }
 
 func (v *gameView) handleEvent(ui *UI, e tcell.Event) bool {
@@ -38,18 +42,30 @@ func (v *gameView) handleEvent(ui *UI, e tcell.Event) bool {
 
 func (v *gameView) notify(wv wire.Value) {
 	v.Error("ignoring notifications at the moment: %v", wv)
-	// if e, ok := v.(*wire.Entity); ok {
-	// 	m.entities[e.ID] = *e
-	// }
+	switch z := wv.(type) {
+	case *wire.UpdateEntity:
+		if z.Room == v.roomName {
+			v.Info("we want to read this one: %v", z)
+		}
+	}
 }
 
 func (v *gameView) move(ui *UI, dx, dy int) {
-	_, err := ui.client.Send(sim.Move{dx, dy})
+	reply, err := ui.client.Send(sim.Move{dx, dy})
 	if err != nil {
 		return
 	}
-	// e := reply.Body.(*wire.Entity)
-	// v.entities[e.ID] = *e
+
+	e := reply.Body.(*wire.UpdateEntity)
+	// ughhhhhh
+	v.me = wire.Entity{
+		ID:       e.ID,
+		Position: e.Position,
+		Glyph:    e.Glyph,
+	}
+	v.allEntities[e.ID] = v.me
+	// jfc this sucks
+	v.allRooms[v.roomName].Entities[e.ID] = v.me
 }
 
 func (v *gameView) draw(ui *UI) {
@@ -76,7 +92,8 @@ func (v *gameView) draw(ui *UI) {
 		ui.screen.SetContent(offset.x+v.width, y+offset.y, '│', nil, tcell.StyleDefault)
 	}
 
-	// for _, e := range v.entities {
-	// 	ui.screen.SetContent(e.Position[0]+offset.x, e.Position[1]+offset.y, e.Glyph, nil, tcell.StyleDefault)
-	// }
+	for _, e := range v.allRooms[v.roomName].Entities {
+		pos := e.Position.Add(math.Vec{1, 1})
+		ui.screen.SetContent(pos.X, pos.Y, e.Glyph, nil, tcell.StyleDefault)
+	}
 }

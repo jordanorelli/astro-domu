@@ -36,18 +36,25 @@ func (ui *UI) Run() {
 		ui.Error("unexpected initial message of type %t", res.Body)
 		return
 	}
-	ui.Info("spawned into room %s", welcome.Room)
-
-	// entities := make(map[int]sim.Entity, len(welcome.Contents))
-	// for _, e := range welcome.Contents {
-	// 	entities[e.ID] = e
-	// }
-	ui.view = &gameView{
-		Log:    ui.Child("game-view"),
-		width:  welcome.Room.Width,
-		height: welcome.Room.Height,
-		// entities: entities,
+	ui.Info("welcome: %v", welcome)
+	meta := welcome.Players[ui.PlayerName]
+	room := welcome.Rooms[meta.Room]
+	allEntities := make(map[int]wire.Entity)
+	for _, r := range welcome.Rooms {
+		for id, e := range r.Entities {
+			allEntities[id] = e
+		}
 	}
+	ui.view = &gameView{
+		Log:         ui.Child("game-view"),
+		roomName:    room.Name,
+		width:       room.Width(),
+		height:      room.Height(),
+		me:          room.Entities[meta.Avatar],
+		allRooms:    welcome.Rooms,
+		allEntities: allEntities,
+	}
+
 	ui.Info("running ui")
 	if ui.handleUserInput() {
 		ui.Info("user requested close")

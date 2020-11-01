@@ -13,7 +13,7 @@ type player struct {
 	name    string
 	outbox  chan wire.Response
 	pending []Request
-	entity  *entity
+	avatar  *entity
 }
 
 type Move math.Vec
@@ -21,24 +21,25 @@ type Move math.Vec
 func (Move) NetTag() string { return "move" }
 
 func (m *Move) exec(r *room, p *player, seq int) result {
-	pos := p.entity.Position
+	pos := p.avatar.Position
 	target := pos.Add(math.Vec(*m))
 	p.Info("running move for player %s from %v to %v", p.name, *m, target)
-	if target.X >= r.width || target.X < 0 {
+	if !p.room.bounds.Contains(target) {
 		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target.X, target.Y)}
 	}
-	if target.Y >= r.height || target.Y < 0 {
-		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target.X, target.Y)}
-	}
-	n := target.X*r.width + target.Y
-	if r.tiles[n].here != nil {
+
+	currentTile := r.getTile(pos)
+	nextTile := r.getTile(target)
+	if nextTile.here != nil {
 		return result{reply: wire.Errorf("target cell (%d, %d) is occupied", target.X, target.Y)}
 	}
-	r.tiles[p.entity.Position.X*r.width+p.entity.Position.Y].here = nil
-	p.entity.Position = target
-	r.tiles[n].here = p.entity
-	e := wire.Entity{
-		Position: p.entity.Position,
+
+	currentTile.here, nextTile.here = nil, p.avatar
+	p.avatar.Position = target
+	e := wire.UpdateEntity{
+		Room:     r.name,
+		ID:       p.avatar.ID,
+		Position: p.avatar.Position,
 		Glyph:    '@',
 	}
 	return result{reply: e, announce: e}
@@ -63,30 +64,51 @@ func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
 		}
 
 		lastEntityID++
+		avatar := &entity{
+			ID:       lastEntityID,
+			Position: math.Vec{0, 0},
+			Glyph:    '@',
+			behavior: doNothing{},
+		}
 		p := &player{
 			Log:     r.Log.Child("players").Child(s.Name),
 			room:    r,
 			name:    s.Name,
 			outbox:  s.Outbox,
 			pending: make([]Request, 0, 32),
-			entity: &entity{
-				ID:       lastEntityID,
-				Position: math.Vec{0, 0},
-				Glyph:    '@',
-				behavior: doNothing{},
-			},
+			avatar:  avatar,
 		}
 		p.pending = append(p.pending, Request{Seq: seq, From: s.Name, Wants: s})
 		r.players[s.Name] = p
-		r.tiles[0].here = p.entity
+		r.tiles[0].here = p.avatar
 		s.queued = true
 		return result{}
 	}
 
-	var welcome wire.Welcome
-	welcome.Room.Width = r.width
-	welcome.Room.Height = r.height
-	welcome.Room.Origin = math.Vec{0, 0}
+	welcome := wire.Welcome{
+		Rooms:   make(map[string]wire.Room),
+		Players: make(map[string]wire.Player),
+	}
+	ents := make(map[int]wire.Entity)
+	for id, e := range r.allEntities() {
+		ents[id] = wire.Entity{
+			ID:       id,
+			Position: e.Position,
+			Glyph:    e.Glyph,
+		}
+	}
+	welcome.Rooms[r.name] = wire.Room{
+		Name:     r.name,
+		Bounds:   r.bounds,
+		Entities: ents,
+	}
+	for _, p := range r.players {
+		welcome.Players[p.name] = wire.Player{
+			Name:   p.name,
+			Avatar: p.avatar.ID,
+			Room:   r.name,
+		}
+	}
 	return result{reply: welcome}
 }
 
@@ -102,5 +124,4 @@ func (PlayerSpawned) NetTag() string { return "player/spawned" }
 
 func init() {
 	wire.Register(func() wire.Value { return new(Move) })
-	// wire.Register(func() wire.Value { return new(pawn) })
 }

@@ -1,16 +1,8 @@
 package wire
 
-import (
-	"github.com/jordanorelli/astro-domu/internal/math"
-)
-
 type Welcome struct {
-	Room struct {
-		Origin math.Vec `json:"origin"`
-		Width  int      `json:"width"`
-		Height int      `json:"height"`
-	} `json:"room"`
-	Entities map[int]Entity `json:"entities"`
+	Rooms   map[string]Room   `json:"rooms"`
+	Players map[string]Player `json:"players"`
 }
 
 func (Welcome) NetTag() string { return "welcome" }

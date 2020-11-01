@@ -3,6 +3,7 @@ package sim
 import (
 	"time"
 
+	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
@@ -11,8 +12,7 @@ type room struct {
 	*blammo.Log
 	name    string
 	origin  point
-	width   int
-	height  int
+	bounds  math.Bounds
 	tiles   []tile
 	players map[string]*player
 }
@@ -39,11 +39,12 @@ func (r *room) update(dt time.Duration) {
 	}
 }
 
-func (r *room) allEntities() []entity {
-	all := make([]entity, 0, 4)
+func (r *room) allEntities() map[int]*entity {
+	all := make(map[int]*entity, 4)
 	for _, t := range r.tiles {
 		if t.here != nil {
-			all = append(all, *t.here)
+			e := t.here
+			all[e.ID] = e
 		}
 	}
 	return all
@@ -59,4 +60,12 @@ func (r *room) removePlayer(name string) bool {
 		return true
 	}
 	return false
+}
+
+func (r *room) getTile(pos math.Vec) *tile {
+	if !r.bounds.Contains(pos) {
+		return nil
+	}
+	n := pos.X*r.bounds.Width() + pos.Y
+	return &r.tiles[n]
 }
