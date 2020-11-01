@@ -14,6 +14,7 @@ type UI struct {
 	PlayerName string
 	screen     tcell.Screen
 	view       view
+	room       *wire.Room
 	client     *wire.Client
 }
 
@@ -39,20 +40,11 @@ func (ui *UI) Run() {
 	ui.Info("welcome: %v", welcome)
 	meta := welcome.Players[ui.PlayerName]
 	room := welcome.Rooms[meta.Room]
-	allEntities := make(map[int]wire.Entity)
-	for _, r := range welcome.Rooms {
-		for id, e := range r.Entities {
-			allEntities[id] = e
-		}
-	}
+	ui.room = &room
 	ui.view = &gameView{
-		Log:         ui.Child("game-view"),
-		roomName:    room.Name,
-		width:       room.Width(),
-		height:      room.Height(),
-		me:          room.Entities[meta.Avatar],
-		allRooms:    welcome.Rooms,
-		allEntities: allEntities,
+		Log:  ui.Child("game-view"),
+		room: &room,
+		me:   room.Entities[meta.Avatar],
 	}
 
 	ui.Info("running ui")
@@ -107,16 +99,29 @@ func (ui *UI) clearTerminal() {
 
 func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	for n := range c {
-		ui.Info("ignoring notification: %v", n)
-		ui.view.notify(n.Body)
-		ui.view.draw(ui)
-		ui.screen.Show()
+		if ui.handleNotification(n.Body) {
+			ui.view.draw(ui)
+			ui.screen.Show()
+		}
 	}
 	ui.Info("notifications channel is closed so we must be done")
 	ui.Info("clearing and finalizing screen from notifications goroutine")
 	ui.screen.Clear()
 	ui.screen.Fini()
 	ui.Info("screen finalized")
+}
+
+func (ui *UI) handleNotification(v wire.Value) bool {
+	switch n := v.(type) {
+
+	case *wire.Entity:
+		ui.room.Entities[n.ID] = n
+		return true
+
+	default:
+		ui.Info("ignoring notification: %v", n)
+		return false
+	}
 }
 
 // writeString writes a string in the given style from left to right beginning

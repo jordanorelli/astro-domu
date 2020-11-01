@@ -36,11 +36,10 @@ func (m *Move) exec(r *room, p *player, seq int) result {
 
 	currentTile.here, nextTile.here = nil, p.avatar
 	p.avatar.Position = target
-	e := wire.UpdateEntity{
-		Room:     r.name,
+	e := wire.Entity{
 		ID:       p.avatar.ID,
 		Position: p.avatar.Position,
-		Glyph:    '@',
+		Glyph:    p.avatar.Glyph,
 	}
 	return result{reply: e, announce: e}
 }
@@ -89,9 +88,9 @@ func (s *SpawnPlayer) exec(r *room, _ *player, seq int) result {
 		Rooms:   make(map[string]wire.Room),
 		Players: make(map[string]wire.Player),
 	}
-	ents := make(map[int]wire.Entity)
+	ents := make(map[int]*wire.Entity)
 	for id, e := range r.allEntities() {
-		ents[id] = wire.Entity{
+		ents[id] = &wire.Entity{
 			ID:       id,
 			Position: e.Position,
 			Glyph:    e.Glyph,

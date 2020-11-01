@@ -10,12 +10,8 @@ import (
 
 type gameView struct {
 	*blammo.Log
-	roomName    string
-	width       int
-	height      int
-	me          wire.Entity
-	allRooms    map[string]wire.Room
-	allEntities map[int]wire.Entity
+	room *wire.Room
+	me   *wire.Entity
 }
 
 func (v *gameView) handleEvent(ui *UI, e tcell.Event) bool {
@@ -40,59 +36,42 @@ func (v *gameView) handleEvent(ui *UI, e tcell.Event) bool {
 	return true
 }
 
-func (v *gameView) notify(wv wire.Value) {
-	v.Error("ignoring notifications at the moment: %v", wv)
-	switch z := wv.(type) {
-	case *wire.UpdateEntity:
-		if z.Room == v.roomName {
-			v.Info("we want to read this one: %v", z)
-		}
-	}
-}
-
 func (v *gameView) move(ui *UI, dx, dy int) {
 	reply, err := ui.client.Send(sim.Move{dx, dy})
 	if err != nil {
 		return
 	}
 
-	e := reply.Body.(*wire.UpdateEntity)
-	// ughhhhhh
-	v.me = wire.Entity{
-		ID:       e.ID,
-		Position: e.Position,
-		Glyph:    e.Glyph,
-	}
-	v.allEntities[e.ID] = v.me
-	// jfc this sucks
-	v.allRooms[v.roomName].Entities[e.ID] = v.me
+	e := reply.Body.(*wire.Entity)
+	v.room.Entities[e.ID] = e
+	v.me = e
 }
 
 func (v *gameView) draw(ui *UI) {
 	offset := point{1, 1}
 
 	// fill in background dots first
-	for x := 0; x < v.width; x++ {
-		for y := 0; y < v.height; y++ {
+	for x := 0; x < v.room.Width(); x++ {
+		for y := 0; y < v.room.Height(); y++ {
 			ui.screen.SetContent(x+offset.x, y+offset.y, '·', nil, tcell.StyleDefault)
 		}
 	}
 
 	// frame it
 	ui.screen.SetContent(offset.x-1, offset.y-1, '┌', nil, tcell.StyleDefault)
-	ui.screen.SetContent(offset.x+v.width, offset.y-1, '┐', nil, tcell.StyleDefault)
-	ui.screen.SetContent(offset.x-1, offset.y+v.height, '└', nil, tcell.StyleDefault)
-	ui.screen.SetContent(offset.x+v.width, offset.y+v.height, '┘', nil, tcell.StyleDefault)
-	for x := 0; x < v.width; x++ {
+	ui.screen.SetContent(offset.x+v.room.Width(), offset.y-1, '┐', nil, tcell.StyleDefault)
+	ui.screen.SetContent(offset.x-1, offset.y+v.room.Height(), '└', nil, tcell.StyleDefault)
+	ui.screen.SetContent(offset.x+v.room.Width(), offset.y+v.room.Height(), '┘', nil, tcell.StyleDefault)
+	for x := 0; x < v.room.Width(); x++ {
 		ui.screen.SetContent(x+offset.x, offset.y-1, '─', nil, tcell.StyleDefault)
-		ui.screen.SetContent(x+offset.x, offset.y+v.height, '─', nil, tcell.StyleDefault)
+		ui.screen.SetContent(x+offset.x, offset.y+v.room.Height(), '─', nil, tcell.StyleDefault)
 	}
-	for y := 0; y < v.height; y++ {
+	for y := 0; y < v.room.Height(); y++ {
 		ui.screen.SetContent(offset.x-1, y+offset.y, '│', nil, tcell.StyleDefault)
-		ui.screen.SetContent(offset.x+v.width, y+offset.y, '│', nil, tcell.StyleDefault)
+		ui.screen.SetContent(offset.x+v.room.Width(), y+offset.y, '│', nil, tcell.StyleDefault)
 	}
 
-	for _, e := range v.allRooms[v.roomName].Entities {
+	for _, e := range v.room.Entities {
 		pos := e.Position.Add(math.Vec{1, 1})
 		ui.screen.SetContent(pos.X, pos.Y, e.Glyph, nil, tcell.StyleDefault)
 	}
