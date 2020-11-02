@@ -19,8 +19,6 @@ import (
 
 type Server struct {
 	*blammo.Log
-	Host  string
-	Port  int
 	http  *http.Server
 	world *sim.World
 
@@ -30,13 +28,7 @@ type Server struct {
 	waitOnSessions sync.WaitGroup
 }
 
-func (s *Server) Start() error {
-	if s.Host == "" {
-		s.Host = "127.0.0.1"
-	}
-	if s.Port == 0 {
-		s.Port = 12805
-	}
+func (s *Server) Start(host string, port int) error {
 	if s.Log == nil {
 		stdout := blammo.NewLineWriter(os.Stdout)
 		stderr := blammo.NewLineWriter(os.Stderr)
@@ -53,7 +45,7 @@ func (s *Server) Start() error {
 	s.world = sim.NewWorld(s.Log.Child("world"))
 	go s.world.Run(3)
 
-	addr := fmt.Sprintf("%s:%d", s.Host, s.Port)
+	addr := fmt.Sprintf("%s:%d", host, port)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("server failed to start a listener: %w", err)
