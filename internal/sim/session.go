@@ -84,7 +84,7 @@ func (sn *session) read(c chan Request) {
 			var req wire.Request
 			if err := json.Unmarshal(b, &req); err != nil {
 				sn.Error("unable to parse request: %v", err)
-				sn.outbox <- wire.ErrorResponse(req.Seq, "unable to parse request: %v", err)
+				sn.enqueue(wire.ErrorResponse(req.Seq, "unable to parse request: %v", err))
 				break
 			}
 			sn.Info("received message of type %T", req.Body)
@@ -107,10 +107,10 @@ func (sn *session) read(c chan Request) {
 					Wants: v,
 				}
 			default:
-				sn.outbox <- wire.ErrorResponse(req.Seq, "not sure how to handle that")
+				sn.enqueue(wire.ErrorResponse(req.Seq, "not sure how to handle that"))
 			}
 		case websocket.BinaryMessage:
-			sn.outbox <- wire.ErrorResponse(0, "unable to parse binary frames")
+			sn.enqueue(wire.ErrorResponse(0, "unable to parse binary frames"))
 		}
 	}
 }
@@ -138,4 +138,17 @@ func (sn *session) sendResponse(res wire.Response) error {
 	}
 	sn.Child("sent-frame").Info(string(payload))
 	return nil
+}
+
+func (sn *session) enqueue(res wire.Response) {
+	select {
+	case sn.outbox <- res:
+		return
+	default:
+		select {
+		case <-sn.outbox:
+			sn.enqueue(res)
+		default:
+		}
+	}
 }

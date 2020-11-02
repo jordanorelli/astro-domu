@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -19,7 +18,7 @@ import (
 type Server struct {
 	*blammo.Log
 	http  *http.Server
-	world *World
+	world *world
 
 	sync.Mutex
 	lastSessionID  int
@@ -29,20 +28,11 @@ type Server struct {
 
 func (s *Server) Start(host string, port int) error {
 	if s.Log == nil {
-		stdout := blammo.NewLineWriter(os.Stdout)
-		stderr := blammo.NewLineWriter(os.Stderr)
-
-		options := []blammo.Option{
-			blammo.DebugWriter(stdout),
-			blammo.InfoWriter(stdout),
-			blammo.ErrorWriter(stderr),
-		}
-
-		s.Log = blammo.NewLog("astro", options...).Child("server")
+		s.Log = defaultLog().Child("server")
 	}
 
-	s.world = NewWorld(s.Log.Child("world"))
-	go s.world.Run(3)
+	s.world = newWorld(s.Log.Child("world"))
+	go s.world.run(3)
 
 	addr := fmt.Sprintf("%s:%d", host, port)
 	lis, err := net.Listen("tcp", addr)
@@ -131,7 +121,7 @@ func (s *Server) Shutdown() {
 	go func() {
 		defer wg.Done()
 
-		if err := s.world.Stop(); err != nil {
+		if err := s.world.stop(); err != nil {
 			s.Error("error stopping the simulation: %v", err)
 		}
 	}()

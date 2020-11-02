@@ -6,7 +6,6 @@ import (
 	"github.com/jordanorelli/blammo"
 )
 
-// player is a player session in the simulation, eek
 type player struct {
 	*blammo.Log
 	*room

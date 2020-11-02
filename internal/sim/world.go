@@ -8,8 +8,8 @@ import (
 	"github.com/jordanorelli/blammo"
 )
 
-// World is the entire simulated world. A world consists of many rooms.
-type World struct {
+// world is the entire simulated world. A world consists of many rooms.
+type world struct {
 	*blammo.Log
 	Inbox chan Request
 
@@ -19,7 +19,7 @@ type World struct {
 	players      map[string]*player
 }
 
-func NewWorld(log *blammo.Log) *World {
+func newWorld(log *blammo.Log) *world {
 	bounds := math.CreateRect(10, 10)
 	foyer := room{
 		Log:     log.Child("foyer"),
@@ -35,7 +35,7 @@ func NewWorld(log *blammo.Log) *World {
 		behavior: doNothing{},
 	}
 	log.Info("created foyer with bounds: %#v having width: %d height: %d area: %d", foyer.Rect, foyer.Width, foyer.Height, foyer.Area())
-	return &World{
+	return &world{
 		Log:     log,
 		rooms:   []room{foyer},
 		done:    make(chan bool),
@@ -44,7 +44,7 @@ func NewWorld(log *blammo.Log) *World {
 	}
 }
 
-func (w *World) Run(hz int) {
+func (w *world) run(hz int) {
 	defer w.Info("simulation has exited run loop")
 
 	period := time.Second / time.Duration(hz)
@@ -94,13 +94,14 @@ func (w *World) Run(hz int) {
 	}
 }
 
-func (w *World) Stop() error {
+func (w *world) stop() error {
 	w.Info("stopping simulation")
 	w.done <- true
+	w.Info("simulation stopped")
 	return nil
 }
 
-func (w *World) tick(d time.Duration) {
+func (w *world) tick(d time.Duration) {
 	for _, r := range w.rooms {
 		r.update(d)
 	}
