@@ -1,4 +1,4 @@
-package server
+package sim
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/jordanorelli/astro-domu/internal/server/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
@@ -47,7 +46,7 @@ func (sn *session) run() {
 }
 
 // read reads for messages on the underlying websocket.
-func (sn *session) read(c chan sim.Request) {
+func (sn *session) read(c chan Request) {
 	for {
 		t, b, err := sn.conn.ReadMessage()
 		if err != nil {
@@ -93,16 +92,16 @@ func (sn *session) read(c chan sim.Request) {
 			switch v := req.Body.(type) {
 			case *wire.Login:
 				sn.Name = v.Name
-				c <- sim.Request{
+				c <- Request{
 					From: sn.Name,
 					Seq:  req.Seq,
-					Wants: &sim.SpawnPlayer{
+					Wants: &SpawnPlayer{
 						Name:   sn.Name,
 						Outbox: sn.outbox,
 					},
 				}
-			case sim.Effect:
-				c <- sim.Request{
+			case Effect:
+				c <- Request{
 					From:  sn.Name,
 					Seq:   req.Seq,
 					Wants: v,

@@ -7,7 +7,7 @@ import (
 
 	"github.com/jordanorelli/astro-domu/internal/app"
 	"github.com/jordanorelli/astro-domu/internal/exit"
-	"github.com/jordanorelli/astro-domu/internal/server"
+	"github.com/jordanorelli/astro-domu/internal/sim"
 	"github.com/jordanorelli/blammo"
 )
 
@@ -37,7 +37,7 @@ func main() {
 	case "client":
 		runClient(os.Args[2])
 	case "server":
-		s := server.Server{}
+		s := sim.Server{}
 		if err := s.Start("127.0.0.1", 12805); err != nil {
 			exit.WithMessage(1, "unable to start server: %v", err)
 		}
