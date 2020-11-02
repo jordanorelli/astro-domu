@@ -92,7 +92,7 @@ func (s *SpawnPlayer) exec(r *room, p *player, seq int) result {
 	}
 	welcome.Rooms[r.name] = wire.Room{
 		Name:     r.name,
-		Bounds:   r.Bounds,
+		Rect:     r.Rect,
 		Entities: ents,
 	}
 	for _, p := range r.players {

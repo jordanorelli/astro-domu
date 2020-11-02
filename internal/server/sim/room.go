@@ -11,7 +11,7 @@ import (
 type room struct {
 	*blammo.Log
 	name string
-	math.Bounds
+	math.Rect
 	tiles   []tile
 	players map[string]*player
 }

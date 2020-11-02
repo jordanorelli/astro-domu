@@ -20,11 +20,11 @@ type World struct {
 }
 
 func NewWorld(log *blammo.Log) *World {
-	bounds := math.CreateBounds(10, 10)
+	bounds := math.CreateRect(10, 10)
 	foyer := room{
 		Log:     log.Child("foyer"),
 		name:    "foyer",
-		Bounds:  math.CreateBounds(10, 10),
+		Rect:    bounds,
 		tiles:   make([]tile, bounds.Area()),
 		players: make(map[string]*player),
 	}
@@ -34,7 +34,7 @@ func NewWorld(log *blammo.Log) *World {
 		Glyph:    'd',
 		behavior: doNothing{},
 	}
-	log.Info("created foyer with bounds: %#v having width: %d height: %d area: %d", foyer.Bounds, foyer.Width, foyer.Height, foyer.Area())
+	log.Info("created foyer with bounds: %#v having width: %d height: %d area: %d", foyer.Rect, foyer.Width, foyer.Height, foyer.Area())
 	return &World{
 		Log:     log,
 		rooms:   []room{foyer},
