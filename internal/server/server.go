@@ -88,7 +88,6 @@ func (s *Server) createSession(conn *websocket.Conn) *session {
 		conn:   conn,
 		outbox: make(chan wire.Response),
 		done:   make(chan bool, 1),
-		world:  s.world,
 	}
 	if s.sessions == nil {
 		s.sessions = make(map[int]*session)
@@ -124,7 +123,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	sn := s.createSession(conn)
 	go sn.run()
-	sn.read()
+	sn.read(s.world.Inbox)
 	s.dropSession(sn)
 
 	sn.Info("closing connection")

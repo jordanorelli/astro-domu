@@ -15,7 +15,6 @@ type session struct {
 	*blammo.Log
 	Name     string
 	id       int
-	world    *sim.World
 	entityID int
 	start    time.Time
 	conn     *websocket.Conn
@@ -48,7 +47,7 @@ func (sn *session) run() {
 }
 
 // read reads for messages on the underlying websocket.
-func (sn *session) read() {
+func (sn *session) read(c chan sim.Request) {
 	for {
 		t, b, err := sn.conn.ReadMessage()
 		if err != nil {
@@ -94,7 +93,7 @@ func (sn *session) read() {
 			switch v := req.Body.(type) {
 			case *wire.Login:
 				sn.Name = v.Name
-				sn.world.Inbox <- sim.Request{
+				c <- sim.Request{
 					From: sn.Name,
 					Seq:  req.Seq,
 					Wants: &sim.SpawnPlayer{
@@ -103,7 +102,7 @@ func (sn *session) read() {
 					},
 				}
 			case sim.Effect:
-				sn.world.Inbox <- sim.Request{
+				c <- sim.Request{
 					From:  sn.Name,
 					Seq:   req.Seq,
 					Wants: v,
