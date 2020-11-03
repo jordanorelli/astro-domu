@@ -3,6 +3,7 @@ package sim
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -137,6 +138,7 @@ func (s spawnPlayer) exec(r *room, p *player, seq int) result {
 		if t.here == nil {
 			x, y := n%r.Width, n/r.Width
 			e := entity{
+				ID:       rand.Intn(9000),
 				Position: math.Vec{x, y},
 				Glyph:    '@',
 				behavior: doNothing{},

@@ -68,23 +68,7 @@ func (w *world) run(hz int) {
 			w.register(c)
 
 		case req := <-w.inbox:
-			w.Info("read from inbox: %v", req)
-
-			if req.From == "" {
-				w.Error("request has no from: %v", req)
-				break
-			}
-
-			p, ok := w.players[req.From]
-			if !ok {
-				w.Error("received non login request of type %T from unknown player %q", req.Wants, req.From)
-			}
-
-			if p.pending == nil {
-				p.pending = &req
-			} else {
-				p.outbox <- wire.ErrorResponse(req.Seq, "you already have a request for this frame")
-			}
+			w.handleRequest(req)
 
 		case <-ticker.C:
 			w.tick(time.Since(lastTick))
@@ -93,6 +77,27 @@ func (w *world) run(hz int) {
 		case <-w.done:
 			return
 		}
+	}
+}
+
+func (w *world) handleRequest(req Request) {
+	w.Info("read from inbox: %v", req)
+
+	if req.From == "" {
+		w.Error("request has no from: %v", req)
+		return
+	}
+
+	p, ok := w.players[req.From]
+	if !ok {
+		w.Error("received non login request of type %T from unknown player %q", req.Wants, req.From)
+		return
+	}
+
+	if p.pending == nil {
+		p.pending = &req
+	} else {
+		p.outbox <- wire.ErrorResponse(req.Seq, "you already have a request for this frame")
 	}
 }
 
