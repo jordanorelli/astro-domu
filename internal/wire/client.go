@@ -169,6 +169,7 @@ func (c *Client) writeLoop() {
 				c.Error("saw response for unknown seq %d")
 				break
 			}
+			delete(sent, res.Re)
 			p.res = res
 			close(p.done)
 

@@ -1,8 +1,10 @@
 package sim
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
@@ -11,12 +13,19 @@ import (
 // world is the entire simulated world. A world consists of many rooms.
 type world struct {
 	*blammo.Log
-	Inbox chan Request
+	inbox   chan Request
+	connect chan connect
 
-	rooms        []room
 	done         chan bool
 	lastEntityID int
+	rooms        map[string]*room
 	players      map[string]*player
+}
+
+type connect struct {
+	conn   *websocket.Conn
+	login  wire.Login
+	failed chan error
 }
 
 func newWorld(log *blammo.Log) *world {
@@ -37,9 +46,10 @@ func newWorld(log *blammo.Log) *world {
 	log.Info("created foyer with bounds: %#v having width: %d height: %d area: %d", foyer.Rect, foyer.Width, foyer.Height, foyer.Area())
 	return &world{
 		Log:     log,
-		rooms:   []room{foyer},
+		rooms:   map[string]*room{"foyer": &foyer},
 		done:    make(chan bool),
-		Inbox:   make(chan Request),
+		inbox:   make(chan Request),
+		connect: make(chan connect),
 		players: make(map[string]*player),
 	}
 }
@@ -54,22 +64,14 @@ func (w *world) run(hz int) {
 
 	for {
 		select {
-		case req := <-w.Inbox:
+		case c := <-w.connect:
+			w.register(c)
+
+		case req := <-w.inbox:
 			w.Info("read from inbox: %v", req)
 
 			if req.From == "" {
 				w.Error("request has no from: %v", req)
-				break
-			}
-
-			if spawn, ok := req.Wants.(*SpawnPlayer); ok {
-				if _, ok := w.players[req.From]; ok {
-					spawn.Outbox <- wire.ErrorResponse(req.Seq, "a player is already logged in as %q", req.From)
-					break
-				}
-				spawn.exec(&w.rooms[0], nil, req.Seq)
-				p := w.rooms[0].players[req.From]
-				w.players[req.From] = p
 				break
 			}
 
@@ -92,6 +94,31 @@ func (w *world) run(hz int) {
 			return
 		}
 	}
+}
+
+func (w *world) register(c connect) {
+	w.Info("register: %#v", c.login)
+	foyer := w.rooms["foyer"]
+	if len(foyer.players) >= 100 {
+		c.failed <- fmt.Errorf("room is full")
+		close(c.failed)
+		return
+	}
+
+	p := player{
+		Log:    w.Log.Child("players").Child(c.login.Name),
+		name:   c.login.Name,
+		outbox: make(chan wire.Response, 8),
+		pending: &Request{
+			From:  c.login.Name,
+			Seq:   1,
+			Wants: &spawnPlayer{},
+		},
+	}
+	foyer.players[c.login.Name] = &p
+	w.players[c.login.Name] = &p
+
+	p.start(w.inbox, c.conn, foyer)
 }
 
 func (w *world) stop() error {

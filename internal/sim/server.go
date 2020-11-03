@@ -2,10 +2,10 @@ package sim
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -19,11 +19,6 @@ type Server struct {
 	*blammo.Log
 	http  *http.Server
 	world *world
-
-	sync.Mutex
-	lastSessionID  int
-	sessions       map[int]*session
-	waitOnSessions sync.WaitGroup
 }
 
 func (s *Server) Start(host string, port int) error {
@@ -32,7 +27,7 @@ func (s *Server) Start(host string, port int) error {
 	}
 
 	s.world = newWorld(s.Log.Child("world"))
-	go s.world.run(3)
+	go s.world.run(30)
 
 	addr := fmt.Sprintf("%s:%d", host, port)
 	lis, err := net.Listen("tcp", addr)
@@ -57,59 +52,65 @@ func (s *Server) runHTTPServer(lis net.Listener) {
 	}
 }
 
-func (s *Server) createSession(conn *websocket.Conn) *session {
-	s.Lock()
-	defer s.Unlock()
-
-	s.lastSessionID++
-	sn := &session{
-		Log:    s.Log.Child("sessions").Child(strconv.Itoa(s.lastSessionID)),
-		id:     s.lastSessionID,
-		start:  time.Now(),
-		conn:   conn,
-		outbox: make(chan wire.Response),
-		done:   make(chan bool, 1),
-	}
-	if s.sessions == nil {
-		s.sessions = make(map[int]*session)
-	}
-	s.waitOnSessions.Add(1)
-	s.sessions[sn.id] = sn
-	// sn.entityID = s.world.SpawnPlayer(sn.id)
-	// s.Info("created session %d, %d sessions active", sn.id, len(s.sessions))
-	return sn
-}
-
-// dropSession removes a session from the server. This should only be called as
-// a result of the connection's read loop terminating
-func (s *Server) dropSession(sn *session) {
-	s.Lock()
-	defer s.Unlock()
-
-	close(sn.done)
-	delete(s.sessions, sn.id)
-	s.waitOnSessions.Add(-1)
-
-	s.Info("dropped session %d after %v time connected, %d sessions active", sn.id, time.Since(sn.start), len(s.sessions))
-}
-
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	upgrader := websocket.Upgrader{}
+	log := s.Log.Child("login")
+	upgrader := websocket.Upgrader{
+		HandshakeTimeout: 3 * time.Second,
+		ReadBufferSize:   2 << 12,
+		WriteBufferSize:  2 << 12,
+		Subprotocols:     []string{"astrodomu@v0"},
+	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		s.Error("upgrade error: %v", err)
+		log.Error("upgrade error: %v", err)
 		return
 	}
 
-	sn := s.createSession(conn)
-	go sn.run()
-	sn.read(s.world.Inbox)
-	s.dropSession(sn)
+	t, rd, err := conn.NextReader()
+	if err != nil {
+		log.Error("unable to get a reader: %v", err)
+		conn.Close()
+		return
+	}
 
-	sn.Info("closing connection")
-	if err := conn.Close(); err != nil {
-		s.Error("error closing connection: %v", err)
+	if t != websocket.TextMessage {
+		log.Error("first message is not text")
+		// TODO: send websocket close frame here
+		conn.Close()
+		return
+	}
+
+	var req wire.Request
+	if err := json.NewDecoder(rd).Decode(&req); err != nil {
+		log.Error("unable to parse initial request: %v", err)
+		// TODO: send websocket close frame here
+		conn.Close()
+		return
+	}
+
+	login, ok := req.Body.(*wire.Login)
+	if !ok {
+		log.Error("first request is not wire.Login, is %T", req.Body)
+		// TODO: send websocket close frame here
+		conn.Close()
+		return
+	}
+
+	log.Info("login requested: %v", *login)
+
+	failed := make(chan error, 1)
+	s.world.connect <- connect{
+		conn:   conn,
+		login:  *login,
+		failed: failed,
+	}
+	e := <-failed
+	if e != nil {
+		log.Error("connect failed: %v", err)
+		// TODO: send websocket close frame here
+		conn.Close()
+		return
 	}
 }
 
@@ -117,7 +118,7 @@ func (s *Server) Shutdown() {
 	s.Info("starting shutdown procedure")
 
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
 
@@ -138,29 +139,6 @@ func (s *Server) Shutdown() {
 		}
 	}()
 
-	go func() {
-		defer wg.Done()
-
-		log := s.Child("sessions")
-		s.Lock()
-		numSessions := len(s.sessions)
-		if numSessions > 0 {
-			log.Info("broadcasting shutdown to %d active sessions", numSessions)
-			for id, sn := range s.sessions {
-				log.Info("sending done signal to session: %d", id)
-				sn.done <- true
-			}
-		} else {
-			log.Info("no active sessions")
-		}
-		s.Unlock()
-
-		if numSessions > 0 {
-			log.Info("waiting on %d connected sessions to shut down", numSessions)
-		}
-		s.waitOnSessions.Wait()
-		log.Info("all sessions have shut down")
-	}()
 	wg.Wait()
 	s.Info("shutdown procedure complete")
 }
