@@ -15,6 +15,7 @@ type world struct {
 	*blammo.Log
 	inbox   chan Request
 	connect chan connect
+	nextID  chan int
 
 	done         chan bool
 	lastEntityID int
@@ -51,11 +52,24 @@ func newWorld(log *blammo.Log) *world {
 		inbox:   make(chan Request),
 		connect: make(chan connect),
 		players: make(map[string]*player),
+		nextID:  make(chan int),
 	}
 }
 
 func (w *world) run(hz int) {
 	defer w.Info("simulation has exited run loop")
+
+	go func() {
+		lastID := 1
+		for {
+			select {
+			case <-w.done:
+				return
+			case w.nextID <- lastID:
+				lastID++
+			}
+		}
+	}()
 
 	period := time.Second / time.Duration(hz)
 	w.Info("starting world with a tick rate of %dhz, frame duration of %v", hz, period)
@@ -66,9 +80,12 @@ func (w *world) run(hz int) {
 		select {
 		case c := <-w.connect:
 			w.register(c)
+			w.Info("finished registration for: %v", c)
 
 		case req := <-w.inbox:
+			w.Info("read request off of inbox: %v", req)
 			w.handleRequest(req)
+			w.Info("finished handling request: %v", req)
 
 		case <-ticker.C:
 			w.tick(time.Since(lastTick))
@@ -123,6 +140,7 @@ func (w *world) register(c connect) {
 	foyer.players[c.login.Name] = &p
 	w.players[c.login.Name] = &p
 
+	w.Info("starting player...")
 	p.start(w.inbox, c.conn, foyer)
 }
 
@@ -134,7 +152,39 @@ func (w *world) stop() error {
 }
 
 func (w *world) tick(d time.Duration) {
+	// run all player effects
 	for _, r := range w.rooms {
-		r.update(d)
+		for _, p := range r.players {
+			if p.pending == nil {
+				continue
+			}
+			req := p.pending
+			p.pending = nil
+
+			res := req.Wants.exec(w, r, p, req.Seq)
+			if res.reply != nil {
+				p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
+			} else {
+				p.outbox <- wire.Response{Re: req.Seq, Body: wire.OK{}}
+			}
+		}
+	}
+
+	// run all object effects
+	for _, r := range w.rooms {
+		for _, t := range r.tiles {
+			if t.here != nil {
+				t.here.update(d)
+			}
+		}
+
+		frame := wire.Frame{
+			Entities: r.allEntities(),
+			Players:  r.playerAvatars(),
+		}
+
+		for _, p := range r.players {
+			p.outbox <- wire.Response{Body: frame}
+		}
 	}
 }

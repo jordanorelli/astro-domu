@@ -3,8 +3,7 @@ package sim
 import "github.com/jordanorelli/astro-domu/internal/wire"
 
 type Effect interface {
-	//wire.Value
-	exec(*room, *player, int) result
+	exec(*world, *room, *player, int) result
 }
 
 type result struct {

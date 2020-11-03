@@ -1,8 +1,6 @@
 package sim
 
 import (
-	"time"
-
 	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
@@ -14,38 +12,6 @@ type room struct {
 	math.Rect
 	tiles   []tile
 	players map[string]*player
-}
-
-func (r *room) update(dt time.Duration) {
-	for _, p := range r.players {
-		if p.pending == nil {
-			continue
-		}
-		req := p.pending
-		p.pending = nil
-
-		res := req.Wants.exec(r, p, req.Seq)
-		if res.reply != nil {
-			p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
-		} else {
-			p.outbox <- wire.Response{Re: req.Seq, Body: wire.OK{}}
-		}
-	}
-
-	for _, t := range r.tiles {
-		if t.here != nil {
-			t.here.update(dt)
-		}
-	}
-
-	frame := wire.Frame{
-		Entities: r.allEntities(),
-		Players:  r.playerAvatars(),
-	}
-
-	for _, p := range r.players {
-		p.outbox <- wire.Response{Body: frame}
-	}
 }
 
 func (r *room) allEntities() map[int]wire.Entity {

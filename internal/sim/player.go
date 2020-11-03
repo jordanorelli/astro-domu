@@ -3,7 +3,6 @@ package sim
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -49,12 +48,17 @@ func (p *player) start(c chan Request, conn *websocket.Conn, r *room) {
 		}
 		welcome.Players[p.name] = wp
 	}
+	p.Info("sending welcome to outbox")
 	p.outbox <- wire.Response{Re: 1, Body: welcome}
+	p.Info("sent welcome, starting loops")
 	go p.readLoop(c, conn)
 	go p.runLoop(conn)
 }
 
 func (p *player) readLoop(c chan Request, conn *websocket.Conn) {
+	p.Info("readLoop started")
+	defer p.Info("readLoop ended")
+
 	for {
 		_, b, err := conn.ReadMessage()
 		if err != nil {
@@ -69,10 +73,10 @@ func (p *player) readLoop(c chan Request, conn *websocket.Conn) {
 			p.Error("unable to parse request: %v", err)
 			continue
 		}
-		// sn.Info("received message of type %T", req.Body)
 
 		effect, ok := req.Body.(Effect)
 		if !ok {
+			p.Error("request is not an effect, is %T", req.Body)
 			continue
 		}
 		c <- Request{
@@ -81,10 +85,12 @@ func (p *player) readLoop(c chan Request, conn *websocket.Conn) {
 			Wants: effect,
 		}
 	}
-
 }
 
 func (p *player) runLoop(conn *websocket.Conn) {
+	p.Info("runLoop started")
+	defer p.Info("runLoop ended")
+
 	for {
 		select {
 		case res := <-p.outbox:
@@ -133,12 +139,12 @@ func sendResponse(conn *websocket.Conn, res wire.Response) error {
 
 type spawnPlayer struct{}
 
-func (s spawnPlayer) exec(r *room, p *player, seq int) result {
+func (s spawnPlayer) exec(w *world, r *room, p *player, seq int) result {
 	for n, t := range r.tiles {
 		if t.here == nil {
 			x, y := n%r.Width, n/r.Width
 			e := entity{
-				ID:       rand.Intn(9000),
+				ID:       <-w.nextID,
 				Position: math.Vec{x, y},
 				Glyph:    '@',
 				behavior: doNothing{},
@@ -155,7 +161,7 @@ type Move math.Vec
 
 func (Move) NetTag() string { return "move" }
 
-func (m *Move) exec(r *room, p *player, seq int) result {
+func (m *Move) exec(w *world, r *room, p *player, seq int) result {
 	pos := p.avatar.Position
 	target := pos.Add(math.Vec(*m))
 	p.Info("running move for player %s from %v to %v", p.name, *m, target)

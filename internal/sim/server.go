@@ -27,7 +27,7 @@ func (s *Server) Start(host string, port int) error {
 	}
 
 	s.world = newWorld(s.Log.Child("world"))
-	go s.world.run(30)
+	go s.world.run(2)
 
 	addr := fmt.Sprintf("%s:%d", host, port)
 	lis, err := net.Listen("tcp", addr)
