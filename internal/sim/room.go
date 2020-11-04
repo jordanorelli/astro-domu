@@ -37,6 +37,18 @@ func (r *room) playerAvatars() map[string]int {
 	return all
 }
 
+func (r *room) addEntity(e *entity) bool {
+	t := r.getTile(e.Position)
+	if t == nil {
+		return false
+	}
+	if t.here != nil {
+		return false
+	}
+	t.here = e
+	return true
+}
+
 func (r *room) addPlayer(p *player) {
 	r.players[p.name] = p
 }

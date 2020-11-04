@@ -38,16 +38,43 @@ func newWorld(log *blammo.Log) *world {
 		tiles:   make([]tile, bounds.Area()),
 		players: make(map[string]*player),
 	}
-	foyer.tiles[55].here = &entity{
-		ID:       777,
+
+	foyer.addEntity(&entity{
+		ID:       -1,
 		Position: math.Vec{5, 5},
 		Glyph:    'd',
 		behavior: doNothing{},
+	})
+
+	foyer.addEntity(&entity{
+		ID:       -2,
+		Position: math.Vec{9, 0},
+		Glyph:    '+',
+		behavior: doNothing{},
+	})
+
+	foyer.addEntity(&entity{
+		ID:       -3,
+		Position: math.Vec{9, 1},
+		Glyph:    '-',
+		behavior: doNothing{},
+	})
+
+	hall := room{
+		Log:     log.Child("hall"),
+		name:    "hall",
+		Rect:    math.CreateRect(20, 4),
+		tiles:   make([]tile, bounds.Area()),
+		players: make(map[string]*player),
 	}
+
 	log.Info("created foyer with bounds: %#v having width: %d height: %d area: %d", foyer.Rect, foyer.Width, foyer.Height, foyer.Area())
 	return &world{
-		Log:     log,
-		rooms:   map[string]*room{"foyer": &foyer},
+		Log: log,
+		rooms: map[string]*room{
+			"foyer": &foyer,
+			"hall":  &hall,
+		},
 		done:    make(chan bool),
 		inbox:   make(chan Request),
 		connect: make(chan connect),
