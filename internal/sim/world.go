@@ -61,6 +61,15 @@ func newWorld(log *blammo.Log) *world {
 		behavior: doNothing{},
 	})
 
+	foyer.addEntity(&entity{
+		ID:       -4,
+		Position: math.Vec{9, 5},
+		Glyph:    '◇',
+		behavior: &door{
+			Log: log.Child("door"),
+		},
+	})
+
 	hall := room{
 		Log:     log.Child("hall"),
 		name:    "hall",
@@ -201,14 +210,22 @@ func (w *world) tick(d time.Duration) {
 		}
 	}
 
-	// run all object effects
+	// run all object updates
 	for _, r := range w.rooms {
 		for _, t := range r.tiles {
-			for _, e := range t.here {
-				e.update(d)
-			}
+			t.update(d)
 		}
+	}
 
+	// check all overlapping entities
+	for _, r := range w.rooms {
+		for _, t := range r.tiles {
+			t.overlaps()
+		}
+	}
+
+	// send frame data to all players
+	for _, r := range w.rooms {
 		frame := wire.Frame{
 			Entities: r.allEntities(),
 			Players:  r.playerAvatars(),
