@@ -19,6 +19,15 @@ func (c *chatView) handleEvent(ui *UI, e tcell.Event) bool {
 	case *tcell.EventKey:
 		key := t.Key()
 
+		if key == tcell.KeyBackspace || key == tcell.KeyBackspace2 {
+			line := []rune(c.composing)
+			if len(line) > 0 {
+				line = line[:len(line)-1]
+			}
+			c.composing = string(line)
+			break
+		}
+
 		if key == tcell.KeyRune {
 			c.composing = fmt.Sprintf("%s%c", c.composing, t.Rune())
 			c.Info("composing: %v", c.composing)
@@ -32,8 +41,10 @@ func (c *chatView) handleEvent(ui *UI, e tcell.Event) bool {
 
 func (c *chatView) draw(b *buffer) {
 	b.writeString(c.composing, math.Vec{0, b.height - 1}, tcell.StyleDefault)
+
 	if c.inFocus {
-		b.set(len([]rune(c.composing)), b.height-1, tile{r: tcell.RuneBlock, style: tcell.StyleDefault.Blink(true).Foreground(tcell.NewRGBColor(255, 0, 0))})
+		cursor := tile{r: tcell.RuneBlock, style: tcell.StyleDefault.Blink(true)}
+		b.set(len([]rune(c.composing)), b.height-1, cursor)
 	}
 }
 
