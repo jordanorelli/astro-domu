@@ -2,7 +2,6 @@ package app
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
@@ -41,32 +40,47 @@ func (v *gameView) move(ui *UI, dx, dy int) {
 	go ui.client.Send(sim.Move{dx, dy})
 }
 
-func (v *gameView) draw(ui *UI) {
-	offset := point{1, 1}
+func (v *gameView) draw(b *buffer) {
+	v.drawHeader(b)
 
 	// fill in background dots first
 	for x := 0; x < v.room.Width; x++ {
 		for y := 0; y < v.room.Height; y++ {
-			ui.screen.SetContent(x+offset.x, y+offset.y, '·', nil, tcell.StyleDefault)
+			b.set(x+1, y+2, tile{r: '·', style: tcell.StyleDefault})
 		}
 	}
-
-	// frame it
-	ui.screen.SetContent(offset.x-1, offset.y-1, '┌', nil, tcell.StyleDefault)
-	ui.screen.SetContent(offset.x+v.room.Width, offset.y-1, '┐', nil, tcell.StyleDefault)
-	ui.screen.SetContent(offset.x-1, offset.y+v.room.Height, '└', nil, tcell.StyleDefault)
-	ui.screen.SetContent(offset.x+v.room.Width, offset.y+v.room.Height, '┘', nil, tcell.StyleDefault)
+	b.set(0, 1, tile{r: '┌'})
+	b.set(v.room.Width+1, 1, tile{r: '┐'})
+	b.set(0, v.room.Height+2, tile{r: '└'})
+	b.set(v.room.Width+1, v.room.Height+2, tile{r: '┘'})
 	for x := 0; x < v.room.Width; x++ {
-		ui.screen.SetContent(x+offset.x, offset.y-1, '─', nil, tcell.StyleDefault)
-		ui.screen.SetContent(x+offset.x, offset.y+v.room.Height, '─', nil, tcell.StyleDefault)
+		b.set(x+1, 1, tile{r: '─'})
+		b.set(x+1, v.room.Height+2, tile{r: '─'})
 	}
 	for y := 0; y < v.room.Height; y++ {
-		ui.screen.SetContent(offset.x-1, y+offset.y, '│', nil, tcell.StyleDefault)
-		ui.screen.SetContent(offset.x+v.room.Width, y+offset.y, '│', nil, tcell.StyleDefault)
+		b.set(0, y+2, tile{r: '│'})
+		b.set(v.room.Width+1, y+2, tile{r: '│'})
+	}
+	for _, e := range v.room.Entities {
+		pos := e.Position
+		b.set(pos.X+1, pos.Y+2, tile{r: e.Glyph, style: tcell.StyleDefault})
 	}
 
-	for _, e := range v.room.Entities {
-		pos := e.Position.Add(math.Vec{1, 1})
-		ui.screen.SetContent(pos.X, pos.Y, e.Glyph, nil, tcell.StyleDefault)
+}
+
+func (v *gameView) drawHeader(b *buffer) {
+	// the first row is the name of the room that we're currently in
+	var style tcell.Style
+	style = style.Background(tcell.NewRGBColor(64, 64, 128))
+	style = style.Foreground(tcell.NewRGBColor(0, 0, 0))
+
+	runes := []rune(v.room.Name)
+
+	for i := 0; i < b.width; i++ {
+		if i < len(runes) {
+			b.set(i, 0, tile{r: runes[i], style: style})
+		} else {
+			b.set(i, 0, tile{r: ' ', style: style})
+		}
 	}
 }

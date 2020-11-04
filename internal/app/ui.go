@@ -5,6 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/exit"
+	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
@@ -107,8 +108,7 @@ func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	for n := range c {
 		if ui.handleNotification(n.Body) {
 			if ui.view != nil {
-				ui.view.draw(ui)
-				ui.screen.Show()
+				ui.render()
 			}
 		}
 	}
@@ -158,7 +158,7 @@ func (ui *UI) writeString(x, y int, s string, style tcell.Style) {
 
 func (ui *UI) handleUserInput() bool {
 	ui.screen.Clear()
-	ui.view.draw(ui)
+	ui.render()
 
 	for {
 		e := ui.screen.PollEvent()
@@ -180,7 +180,15 @@ func (ui *UI) handleUserInput() bool {
 
 		ui.view.handleEvent(ui, e)
 		ui.screen.Clear()
-		ui.view.draw(ui)
+		ui.render()
 		ui.screen.Show()
 	}
+}
+
+func (ui *UI) render() {
+	width, height := ui.screen.Size()
+	b := newBuffer(width, height)
+	ui.view.draw(b)
+	b.blit(ui.screen, math.Vec{1, 1})
+	ui.screen.Show()
 }

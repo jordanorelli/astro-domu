@@ -6,5 +6,5 @@ import (
 
 type view interface {
 	handleEvent(*UI, tcell.Event) bool
-	draw(*UI)
+	draw(*buffer)
 }
