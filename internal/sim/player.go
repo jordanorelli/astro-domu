@@ -50,7 +50,7 @@ func (p *player) start(c chan Request, conn *websocket.Conn, r *room) {
 		welcome.Players[p.name] = wp
 	}
 	p.Info("sending welcome to outbox")
-	p.outbox <- wire.Response{Re: 1, Body: welcome}
+	p.send(wire.Response{Re: 1, Body: welcome})
 	p.Info("sent welcome, starting loops")
 	p.stop = make(chan bool, 1)
 	go p.readLoop(c, conn)
@@ -111,6 +111,20 @@ func (p *player) runLoop(conn *websocket.Conn) {
 				}
 			}
 			return
+		}
+	}
+}
+
+func (p *player) send(res wire.Response) bool {
+	select {
+	case p.outbox <- res:
+		return true
+	default:
+		select {
+		case <-p.outbox:
+			return p.send(res)
+		default:
+			return false
 		}
 	}
 }

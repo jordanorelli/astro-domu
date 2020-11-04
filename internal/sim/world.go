@@ -193,9 +193,9 @@ func (w *world) tick(d time.Duration) {
 
 			res := req.Wants.exec(w, r, p, req.Seq)
 			if res.reply != nil {
-				p.outbox <- wire.Response{Re: req.Seq, Body: res.reply}
+				p.send(wire.Response{Re: req.Seq, Body: res.reply})
 			} else {
-				p.outbox <- wire.Response{Re: req.Seq, Body: wire.OK{}}
+				p.send(wire.Response{Re: req.Seq, Body: wire.OK{}})
 			}
 		}
 	}
@@ -214,7 +214,7 @@ func (w *world) tick(d time.Duration) {
 		}
 
 		for _, p := range r.players {
-			p.outbox <- wire.Response{Body: frame}
+			p.send(wire.Response{Body: frame})
 		}
 	}
 }
