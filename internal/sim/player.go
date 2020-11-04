@@ -18,6 +18,7 @@ type player struct {
 	outbox  chan wire.Response
 	pending *Request
 	avatar  *entity
+	stop    chan bool
 }
 
 func (p *player) start(c chan Request, conn *websocket.Conn, r *room) {
@@ -51,6 +52,7 @@ func (p *player) start(c chan Request, conn *websocket.Conn, r *room) {
 	p.Info("sending welcome to outbox")
 	p.outbox <- wire.Response{Re: 1, Body: welcome}
 	p.Info("sent welcome, starting loops")
+	p.stop = make(chan bool, 1)
 	go p.readLoop(c, conn)
 	go p.runLoop(conn)
 }
@@ -64,6 +66,7 @@ func (p *player) readLoop(c chan Request, conn *websocket.Conn) {
 		if err != nil {
 			p.Error("read error: %v", err)
 			conn.Close()
+			p.stop <- false
 			return
 		}
 		p.Log.Child("received-frame").Info(string(b))
@@ -97,20 +100,18 @@ func (p *player) runLoop(conn *websocket.Conn) {
 			if err := sendResponse(conn, res); err != nil {
 				p.Error(err.Error())
 			}
+		case sendCloseFrame := <-p.stop:
+			if sendCloseFrame {
+				p.Info("sending close frame")
+				msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+				if err := conn.WriteMessage(websocket.CloseMessage, msg); err != nil {
+					p.Error("failed to write close message: %v", err)
+				} else {
+					p.Info("sent close frame")
+				}
+			}
+			return
 		}
-		// case sendCloseFrame := <-sn.done:
-		// 	sn.Info("saw done signal")
-		// 	if sendCloseFrame {
-		// 		sn.Info("sending close frame")
-		// 		msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
-		// 		if err := sn.conn.WriteMessage(websocket.CloseMessage, msg); err != nil {
-		// 			sn.Error("failed to write close message: %v", err)
-		// 		} else {
-		// 			sn.Info("sent close frame")
-		// 		}
-		// 	}
-		// 	return
-		// }
 	}
 }
 

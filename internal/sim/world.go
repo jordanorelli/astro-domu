@@ -119,6 +119,9 @@ func (w *world) run(hz int) {
 			lastTick = time.Now()
 
 		case <-w.done:
+			for _, p := range w.players {
+				p.stop <- true
+			}
 			return
 		}
 	}
