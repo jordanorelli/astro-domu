@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/exit"
 	"github.com/jordanorelli/astro-domu/internal/math"
+	"github.com/jordanorelli/astro-domu/internal/sim"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
@@ -17,8 +18,8 @@ type UI struct {
 	room       *wire.Room
 	client     *wire.Client
 
-	gameView view
-	chatView view
+	gameView *gameView
+	chatView *chatView
 	focussed view
 }
 
@@ -57,7 +58,8 @@ func (ui *UI) Run() {
 		},
 	}
 	ui.chatView = &chatView{
-		Log: ui.Child("chat-view"),
+		Log:     ui.Child("chat-view"),
+		history: make([]sim.ChatMessage, 0, 32),
 	}
 	ui.focussed = ui.gameView
 
@@ -138,6 +140,10 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 			ui.room = new(wire.Room)
 		}
 		ui.room.Entities = n.Entities
+		return true
+
+	case *sim.ChatMessage:
+		ui.chatView.history = append(ui.chatView.history, *n)
 		return true
 
 	default:
