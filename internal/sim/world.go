@@ -66,7 +66,9 @@ func newWorld(log *blammo.Log) *world {
 		Position: math.Vec{9, 5},
 		Glyph:    '◇',
 		behavior: &door{
-			Log: log.Child("door"),
+			Log:  log.Child("door"),
+			to:   "hall",
+			exit: -5,
 		},
 	})
 
@@ -77,6 +79,17 @@ func newWorld(log *blammo.Log) *world {
 		tiles:   make([]tile, bounds.Area()),
 		players: make(map[string]*player),
 	}
+
+	hall.addEntity(&entity{
+		ID:       -5,
+		Position: math.Vec{0, 2},
+		Glyph:    '◇',
+		behavior: &door{
+			Log:  log.Child("door"),
+			to:   "foyer",
+			exit: -4,
+		},
+	})
 
 	log.Info("created foyer with bounds: %#v having width: %d height: %d area: %d", foyer.Rect, foyer.Width, foyer.Height, foyer.Area())
 	return &world{
