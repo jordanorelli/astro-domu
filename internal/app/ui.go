@@ -14,9 +14,12 @@ type UI struct {
 	*blammo.Log
 	PlayerName string
 	screen     tcell.Screen
-	view       view
 	room       *wire.Room
 	client     *wire.Client
+
+	gameView view
+	chatView view
+	focussed view
 }
 
 func (ui *UI) Run() {
@@ -44,7 +47,7 @@ func (ui *UI) Run() {
 	meta := welcome.Players[ui.PlayerName]
 	room := welcome.Rooms[meta.Room]
 	ui.room = &room
-	ui.view = &gameView{
+	ui.gameView = &gameView{
 		Log:  ui.Child("game-view"),
 		room: &room,
 		me: &wire.Entity{
@@ -53,6 +56,10 @@ func (ui *UI) Run() {
 			Position: room.Entities[meta.Avatar].Position,
 		},
 	}
+	ui.chatView = &chatView{
+		Log: ui.Child("chat-view"),
+	}
+	ui.focussed = ui.gameView
 
 	ui.Info("running ui")
 	if ui.handleUserInput() {
@@ -107,7 +114,7 @@ func (ui *UI) clearTerminal() {
 func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	for n := range c {
 		if ui.handleNotification(n.Body) {
-			if ui.view != nil {
+			if ui.gameView != nil {
 				ui.render()
 			}
 		}
@@ -176,19 +183,41 @@ func (ui *UI) handleUserInput() bool {
 				// we want to shut things down
 				return true
 			}
+			if key == tcell.KeyTab {
+				ui.Info("saw tab from keyboard input, switching focussed view")
+				ui.focussed.setFocus(false)
+				if ui.focussed == ui.gameView {
+					ui.focussed = ui.chatView
+				} else {
+					ui.focussed = ui.gameView
+				}
+				ui.focussed.setFocus(true)
+				goto HANDLED
+			}
 		}
 
-		ui.view.handleEvent(ui, e)
+		ui.focussed.handleEvent(ui, e)
 		ui.screen.Clear()
 		ui.render()
 		ui.screen.Show()
+	HANDLED:
 	}
 }
 
 func (ui *UI) render() {
 	width, height := ui.screen.Size()
-	b := newBuffer(width, height)
-	ui.view.draw(b)
-	b.blit(ui.screen, math.Vec{1, 1})
+
+	{
+		b := newBuffer(width/2, height/2)
+		ui.gameView.draw(b)
+		b.blit(ui.screen, math.Vec{0, 0})
+	}
+
+	{
+		b := newBuffer(width, height/2)
+		ui.chatView.draw(b)
+		b.blit(ui.screen, math.Vec{0, height / 2})
+	}
+
 	ui.screen.Show()
 }

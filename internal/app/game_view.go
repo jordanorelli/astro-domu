@@ -9,8 +9,9 @@ import (
 
 type gameView struct {
 	*blammo.Log
-	room *wire.Room
-	me   *wire.Entity
+	room    *wire.Room
+	me      *wire.Entity
+	inFocus bool
 }
 
 func (v *gameView) handleEvent(ui *UI, e tcell.Event) bool {
@@ -84,3 +85,5 @@ func (v *gameView) drawHeader(b *buffer) {
 		}
 	}
 }
+
+func (v *gameView) setFocus(yes bool) { v.inFocus = yes }
