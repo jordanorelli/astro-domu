@@ -43,6 +43,7 @@ func newWorld(log *blammo.Log) *world {
 		ID:       -1,
 		Position: math.Vec{5, 5},
 		Glyph:    'd',
+		solid:    true,
 		behavior: doNothing{},
 	})
 
@@ -203,8 +204,8 @@ func (w *world) tick(d time.Duration) {
 	// run all object effects
 	for _, r := range w.rooms {
 		for _, t := range r.tiles {
-			if t.here != nil {
-				t.here.update(d)
+			for _, e := range t.here {
+				e.update(d)
 			}
 		}
 

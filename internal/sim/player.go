@@ -155,18 +155,19 @@ func sendResponse(conn *websocket.Conn, res wire.Response) error {
 type spawnPlayer struct{}
 
 func (s spawnPlayer) exec(w *world, r *room, p *player, seq int) result {
+	e := entity{
+		ID:       <-w.nextID,
+		Glyph:    '@',
+		solid:    true,
+		behavior: doNothing{},
+	}
+	p.avatar = &e
+
 	for n, t := range r.tiles {
-		if t.here == nil {
-			x, y := n%r.Width, n/r.Width
-			e := entity{
-				ID:       <-w.nextID,
-				Position: math.Vec{x, y},
-				Glyph:    '@',
-				behavior: doNothing{},
-			}
-			p.avatar = &e
-			t.here = &e
-			break
+		x, y := n%r.Width, n/r.Width
+		e.Position = math.Vec{x, y}
+		if t.addEntity(&e) {
+			return result{}
 		}
 	}
 	return result{}
@@ -186,11 +187,10 @@ func (m *Move) exec(w *world, r *room, p *player, seq int) result {
 
 	currentTile := r.getTile(pos)
 	nextTile := r.getTile(target)
-	if nextTile.here != nil {
+	if !nextTile.addEntity(p.avatar) {
 		return result{reply: wire.Errorf("target cell (%d, %d) is occupied", target.X, target.Y)}
 	}
-
-	currentTile.here, nextTile.here = nil, p.avatar
+	currentTile.removeEntity(p.avatar.ID)
 	p.avatar.Position = target
 	return result{reply: wire.OK{}}
 }

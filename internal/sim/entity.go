@@ -10,6 +10,7 @@ type entity struct {
 	ID       int      `json:"id"`
 	Position math.Vec `json:"pos"`
 	Glyph    rune     `json:"glyph"`
+	solid    bool     `json:"-"`
 	behavior
 }
 

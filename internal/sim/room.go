@@ -17,8 +17,7 @@ type room struct {
 func (r *room) allEntities() map[int]wire.Entity {
 	all := make(map[int]wire.Entity, 4)
 	for _, t := range r.tiles {
-		if t.here != nil {
-			e := t.here
+		for _, e := range t.here {
 			all[e.ID] = wire.Entity{
 				ID:       e.ID,
 				Position: e.Position,
@@ -42,11 +41,7 @@ func (r *room) addEntity(e *entity) bool {
 	if t == nil {
 		return false
 	}
-	if t.here != nil {
-		return false
-	}
-	t.here = e
-	return true
+	return t.addEntity(e)
 }
 
 func (r *room) addPlayer(p *player) {
