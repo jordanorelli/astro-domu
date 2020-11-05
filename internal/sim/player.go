@@ -66,6 +66,13 @@ func (p *player) readLoop(c chan Request, conn *websocket.Conn) {
 		if err != nil {
 			p.Error("read error: %v", err)
 			conn.Close()
+			c <- Request{
+				From: p.name,
+				Wants: effect(func(w *world, r *room, p *player, seq int) result {
+					r.removePlayer(p.name)
+					return result{}
+				}),
+			}
 			p.stop <- false
 			return
 		}
