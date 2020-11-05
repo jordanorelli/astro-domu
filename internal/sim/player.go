@@ -180,7 +180,7 @@ func (Move) NetTag() string { return "move" }
 func (m *Move) exec(w *world, r *room, p *player, seq int) result {
 	pos := p.avatar.Position
 	target := pos.Add(math.Vec(*m))
-	p.Info("running move for player %s from %v to %v", p.name, *m, target)
+	p.Info("running move for player %s from %v to %v", p.name, p.avatar.Position, target)
 	if !r.Contains(target) {
 		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target.X, target.Y)}
 	}

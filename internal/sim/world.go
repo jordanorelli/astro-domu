@@ -173,8 +173,15 @@ func (w *world) handleRequest(req Request) {
 
 func (w *world) register(c connect) {
 	w.Info("register: %#v", c.login)
-	foyer := w.rooms["foyer"]
-	if len(foyer.players) >= 100 {
+
+	r := w.rooms["foyer"]
+	if hall, ok := w.rooms["hall"]; ok {
+		if len(hall.players) < len(r.players) {
+			r = hall
+		}
+	}
+
+	if len(r.players) >= 100 {
 		c.failed <- fmt.Errorf("room is full")
 		close(c.failed)
 		return
@@ -190,11 +197,11 @@ func (w *world) register(c connect) {
 			Wants: &spawnPlayer{},
 		},
 	}
-	foyer.players[c.login.Name] = &p
+	r.players[c.login.Name] = &p
 	w.players[c.login.Name] = &p
 
 	w.Info("starting player...")
-	p.start(w.inbox, c.conn, foyer)
+	p.start(w.inbox, c.conn, r)
 }
 
 func (w *world) stop() error {

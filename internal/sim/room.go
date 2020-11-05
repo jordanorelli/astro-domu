@@ -60,6 +60,6 @@ func (r *room) getTile(pos math.Vec) *tile {
 	if !r.Contains(pos) {
 		return nil
 	}
-	n := pos.X*r.Width + pos.Y
+	n := r.Width*pos.Y + pos.X
 	return &r.tiles[n]
 }

@@ -2,12 +2,15 @@ package math
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type Vec struct {
 	X int
 	Y int
 }
+
+func (v Vec) String() string { return fmt.Sprintf("(%d, %d)", v.X, v.Y) }
 
 func (v Vec) MarshalJSON() ([]byte, error) {
 	return json.Marshal([2]int{v.X, v.Y})
