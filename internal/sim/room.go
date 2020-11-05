@@ -36,6 +36,17 @@ func (r *room) playerAvatars() map[string]int {
 	return all
 }
 
+func (r *room) findEntity(id int) *entity {
+	for _, t := range r.tiles {
+		for _, e := range t.here {
+			if e.ID == id {
+				return e
+			}
+		}
+	}
+	return nil
+}
+
 func (r *room) addEntity(e *entity) bool {
 	t := r.getTile(e.Position)
 	if t == nil {
@@ -49,8 +60,12 @@ func (r *room) addPlayer(p *player) {
 }
 
 func (r *room) removePlayer(name string) bool {
-	if _, ok := r.players[name]; ok {
+	if p, ok := r.players[name]; ok {
 		delete(r.players, name)
+		t := r.getTile(p.avatar.Position)
+		if t != nil {
+			t.removeEntity(p.avatar.ID)
+		}
 		return true
 	}
 	return false

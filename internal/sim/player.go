@@ -97,6 +97,9 @@ func (p *player) runLoop(conn *websocket.Conn) {
 	for {
 		select {
 		case res := <-p.outbox:
+			if err, ok := res.Body.(error); ok {
+				p.Error("sending error: %s", err)
+			}
 			if err := sendResponse(conn, res); err != nil {
 				p.Error(err.Error())
 			}
@@ -152,6 +155,8 @@ func sendResponse(conn *websocket.Conn, res wire.Response) error {
 	return nil
 }
 
+func (p *player) update(dt time.Duration) {}
+
 type spawnPlayer struct{}
 
 func (s spawnPlayer) exec(w *world, r *room, p *player, seq int) result {
@@ -159,14 +164,16 @@ func (s spawnPlayer) exec(w *world, r *room, p *player, seq int) result {
 		ID:       <-w.nextID,
 		Glyph:    '@',
 		solid:    true,
-		behavior: doNothing{},
+		behavior: p,
 	}
 	p.avatar = &e
 
-	for n, t := range r.tiles {
+	for n, _ := range r.tiles {
+		t := &r.tiles[n]
 		x, y := n%r.Width, n/r.Width
 		e.Position = math.Vec{x, y}
 		if t.addEntity(&e) {
+			p.Info("player added to tile at %s", e.Position)
 			return result{}
 		}
 	}
@@ -182,15 +189,26 @@ func (m *Move) exec(w *world, r *room, p *player, seq int) result {
 	target := pos.Add(math.Vec(*m))
 	p.Info("running move for player %s from %v to %v", p.name, p.avatar.Position, target)
 	if !r.Contains(target) {
+		p.Error("target cell (%d, %d) is out of bounds", target.X, target.Y)
 		return result{reply: wire.Errorf("target cell (%d, %d) is out of bounds", target.X, target.Y)}
 	}
 
 	currentTile := r.getTile(pos)
+	if !currentTile.hasEntity(p.avatar.ID) {
+		p.Error("player cannot move off of %s because they were not actually there", pos)
+		p.Error("tile %d: %v", pos, currentTile)
+		return result{reply: wire.Errorf("player cannot move off of %s because they were not actually there", pos)}
+	}
+
 	nextTile := r.getTile(target)
-	if !nextTile.addEntity(p.avatar) {
+	if nextTile.isOccupied() {
+		p.Error("target cell (%d, %d) is occupied", target.X, target.Y)
 		return result{reply: wire.Errorf("target cell (%d, %d) is occupied", target.X, target.Y)}
 	}
+
 	currentTile.removeEntity(p.avatar.ID)
+	nextTile.addEntity(p.avatar)
+
 	p.avatar.Position = target
 	return result{reply: wire.OK{}}
 }

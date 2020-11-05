@@ -247,6 +247,8 @@ func (w *world) tick(d time.Duration) {
 	// send frame data to all players
 	for _, r := range w.rooms {
 		frame := wire.Frame{
+			RoomName: r.name,
+			RoomSize: r.Rect,
 			Entities: r.allEntities(),
 			Players:  r.playerAvatars(),
 		}

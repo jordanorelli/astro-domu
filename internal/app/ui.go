@@ -139,6 +139,9 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 		if ui.room == nil {
 			ui.room = new(wire.Room)
 		}
+
+		ui.room.Name = n.RoomName
+		ui.room.Rect = n.RoomSize
 		ui.room.Entities = n.Entities
 		return true
 
