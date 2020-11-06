@@ -17,10 +17,13 @@ type UI struct {
 	screen     tcell.Screen
 	room       *wire.Room
 	client     *wire.Client
+	showCount  int
+	clearCount int
 
-	gameView *gameView
-	chatView *chatView
-	focussed view
+	statusBar *statusBar
+	gameView  *gameView
+	chatView  *chatView
+	focussed  view
 }
 
 func (ui *UI) Run() {
@@ -60,6 +63,9 @@ func (ui *UI) Run() {
 	ui.chatView = &chatView{
 		Log:     ui.Child("chat-view"),
 		history: make([]sim.ChatMessage, 0, 32),
+	}
+	ui.statusBar = &statusBar{
+		ui: ui,
 	}
 	ui.focussed = ui.gameView
 
@@ -109,6 +115,7 @@ func (ui *UI) setupTerminal() {
 }
 
 func (ui *UI) clearTerminal() {
+	ui.clearCount++
 	ui.screen.Clear()
 	ui.screen.Fini()
 }
@@ -123,6 +130,7 @@ func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	}
 	ui.Info("notifications channel is closed so we must be done")
 	ui.Info("clearing and finalizing screen from notifications goroutine")
+	ui.clearCount++
 	ui.screen.Clear()
 	ui.screen.Fini()
 	ui.Info("screen finalized")
@@ -173,6 +181,7 @@ func (ui *UI) writeString(x, y int, s string, style tcell.Style) {
 }
 
 func (ui *UI) handleUserInput() bool {
+	ui.clearCount++
 	ui.screen.Clear()
 	ui.render()
 
@@ -206,8 +215,10 @@ func (ui *UI) handleUserInput() bool {
 		}
 
 		ui.focussed.handleEvent(ui, e)
+		ui.clearCount++
 		ui.screen.Clear()
 		ui.render()
+		ui.showCount++
 		ui.screen.Show()
 	HANDLED:
 	}
@@ -217,16 +228,24 @@ func (ui *UI) render() {
 	width, height := ui.screen.Size()
 
 	{
-		b := newBuffer(width/2, height/2)
-		ui.gameView.draw(b)
+		b := newBuffer(width, 1)
+		ui.statusBar.draw(b)
 		b.blit(ui.screen, math.Vec{0, 0})
 	}
 
+	gameViewHeight := math.Max((height-1)/2, 8)
 	{
-		b := newBuffer(width, height/2)
-		ui.chatView.draw(b)
-		b.blit(ui.screen, math.Vec{0, height / 2})
+		b := newBuffer(width/2, gameViewHeight)
+		ui.gameView.draw(b)
+		b.blit(ui.screen, math.Vec{0, 1})
 	}
 
+	{
+		b := newBuffer(width, height-gameViewHeight-1)
+		ui.chatView.draw(b)
+		b.blit(ui.screen, math.Vec{0, gameViewHeight + 1})
+	}
+
+	ui.showCount++
 	ui.screen.Show()
 }

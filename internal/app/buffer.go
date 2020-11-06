@@ -55,3 +55,11 @@ func (b *buffer) blit(s tcell.Screen, offset math.Vec) {
 		}
 	}
 }
+
+func (b *buffer) fill(style tcell.Style) {
+	for x := 0; x < b.width; x++ {
+		for y := 0; y < b.height; y++ {
+			b.set(x, y, tile{r: ' ', style: style})
+		}
+	}
+}
