@@ -156,6 +156,22 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 		ui.room.Entities = n.Entities
 		return true
 
+	case *wire.Delta:
+		if n.RoomSize != nil {
+			ui.room.Rect = *n.RoomSize
+		}
+
+		if len(n.Entities) > 0 {
+			for id, e := range n.Entities {
+				if e != nil {
+					ui.room.Entities[id] = *e
+				} else {
+					delete(ui.room.Entities, id)
+				}
+			}
+		}
+		return true
+
 	case *sim.ChatMessage:
 		ui.chatView.history = append(ui.chatView.history, *n)
 		return true

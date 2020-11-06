@@ -291,7 +291,13 @@ func (w *world) tick(d time.Duration) {
 		r.lastFrame = frame
 
 		for _, p := range r.players {
-			p.send(wire.Response{Body: frame})
+			switch {
+			case p.fullSync:
+				p.send(wire.Response{Body: frame})
+				p.fullSync = false
+			case delta != nil:
+				p.send(wire.Response{Body: delta})
+			}
 		}
 	}
 }

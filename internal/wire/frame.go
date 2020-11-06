@@ -155,4 +155,5 @@ func (d Delta) IsEmpty() bool {
 
 func init() {
 	Register(func() Value { return new(Frame) })
+	Register(func() Value { return new(Delta) })
 }
