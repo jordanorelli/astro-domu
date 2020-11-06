@@ -56,6 +56,7 @@ func (d *door) exec(w *world, r *room, p *player, seq int) result {
 		p.Error("failed to add player avatar to tile %v", t)
 	}
 	dest.addPlayer(p)
+	p.fullSync = true
 	return result{}
 }
 

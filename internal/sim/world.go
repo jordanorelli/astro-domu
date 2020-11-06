@@ -284,6 +284,12 @@ func (w *world) tick(d time.Duration) {
 			Players:  r.playerAvatars(),
 		}
 
+		delta := r.lastFrame.Diff(frame)
+		if delta != nil {
+			w.Info("%s delta: %s", r.name, delta)
+		}
+		r.lastFrame = frame
+
 		for _, p := range r.players {
 			p.send(wire.Response{Body: frame})
 		}

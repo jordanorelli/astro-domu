@@ -13,12 +13,12 @@ import (
 
 type player struct {
 	*blammo.Log
-	//*room
-	name    string
-	outbox  chan wire.Response
-	pending *Request
-	avatar  *entity
-	stop    chan bool
+	name     string
+	outbox   chan wire.Response
+	pending  *Request
+	avatar   *entity
+	stop     chan bool
+	fullSync bool
 }
 
 func (p *player) start(c chan Request, conn *websocket.Conn, r *room) {
@@ -167,6 +167,7 @@ func (p *player) update(dt time.Duration) {}
 type spawnPlayer struct{}
 
 func (s spawnPlayer) exec(w *world, r *room, p *player, seq int) result {
+	p.fullSync = true
 	e := entity{
 		ID:       <-w.nextID,
 		Glyph:    '@',

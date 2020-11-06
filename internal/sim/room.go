@@ -10,8 +10,9 @@ type room struct {
 	*blammo.Log
 	name string
 	math.Rect
-	tiles   []tile
-	players map[string]*player
+	tiles     []tile
+	players   map[string]*player
+	lastFrame wire.Frame
 }
 
 func (r *room) allEntities() map[int]wire.Entity {
