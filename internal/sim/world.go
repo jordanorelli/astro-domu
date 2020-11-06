@@ -41,7 +41,7 @@ func newWorld(log *blammo.Log) *world {
 
 	foyer.addEntity(&entity{
 		ID:       -1,
-		Position: math.Vec{5, 5},
+		Position: math.Vec{5, 4},
 		Glyph:    'd',
 		solid:    true,
 		behavior: doNothing{},

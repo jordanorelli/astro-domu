@@ -77,7 +77,7 @@ func (ui *UI) Run() {
 func (ui *UI) connect() error {
 	ui.client = &wire.Client{
 		Log:  ui.Child("client"),
-		Host: "127.0.0.1",
+		Host: "cdm.jordanorelli.com",
 		Port: 12805,
 	}
 

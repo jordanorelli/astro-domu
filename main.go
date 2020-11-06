@@ -38,7 +38,7 @@ func main() {
 		runClient(os.Args[2])
 	case "server":
 		s := sim.Server{}
-		if err := s.Start("127.0.0.1", 12805); err != nil {
+		if err := s.Start("cdm.jordanorelli.com", 12805); err != nil {
 			exit.WithMessage(1, "unable to start server: %v", err)
 		}
 		sig := make(chan os.Signal, 1)
