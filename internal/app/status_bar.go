@@ -18,7 +18,7 @@ func (s *statusBar) draw(b *buffer) {
 	if s.ui == nil {
 		return
 	}
-	line := fmt.Sprintf("shown: %08d cleared: %08d", s.ui.showCount, s.ui.clearCount)
+	line := fmt.Sprintf("shown: %08d cleared: %08d messages: %08d", s.ui.showCount, s.ui.clearCount, s.ui.msgCount)
 	b.writeString(line, math.Vec{0, 0}, tcell.StyleDefault)
 }
 

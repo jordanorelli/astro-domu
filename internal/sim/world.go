@@ -76,7 +76,7 @@ func newWorld(log *blammo.Log) *world {
 		Log:     log.Child("hall"),
 		name:    "hall",
 		Rect:    math.CreateRect(20, 4),
-		tiles:   make([]tile, bounds.Area()),
+		tiles:   make([]tile, 80),
 		players: make(map[string]*player),
 	}
 
@@ -91,12 +91,43 @@ func newWorld(log *blammo.Log) *world {
 		},
 	})
 
+	kitchen := room{
+		Log:     log.Child("kitchen"),
+		name:    "kitchen",
+		Rect:    math.CreateRect(6, 12),
+		tiles:   make([]tile, 72),
+		players: make(map[string]*player),
+	}
+
+	foyer.addEntity(&entity{
+		ID:       -6,
+		Position: math.Vec{9, 7},
+		Glyph:    '◇',
+		behavior: &door{
+			Log:  log.Child("door"),
+			to:   "kitchen",
+			exit: -7,
+		},
+	})
+
+	kitchen.addEntity(&entity{
+		ID:       -7,
+		Position: math.Vec{0, 2},
+		Glyph:    '◇',
+		behavior: &door{
+			Log:  log.Child("door"),
+			to:   "foyer",
+			exit: -6,
+		},
+	})
+
 	log.Info("created foyer with bounds: %#v having width: %d height: %d area: %d", foyer.Rect, foyer.Width, foyer.Height, foyer.Area())
 	return &world{
 		Log: log,
 		rooms: map[string]*room{
-			"foyer": &foyer,
-			"hall":  &hall,
+			"foyer":   &foyer,
+			"hall":    &hall,
+			"kitchen": &kitchen,
 		},
 		done:    make(chan bool),
 		inbox:   make(chan Request),

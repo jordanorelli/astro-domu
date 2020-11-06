@@ -17,6 +17,8 @@ type UI struct {
 	screen     tcell.Screen
 	room       *wire.Room
 	client     *wire.Client
+
+	msgCount   int
 	showCount  int
 	clearCount int
 
@@ -122,6 +124,7 @@ func (ui *UI) clearTerminal() {
 
 func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	for n := range c {
+		ui.msgCount++
 		if ui.handleNotification(n.Body) {
 			if ui.gameView != nil {
 				ui.render()
