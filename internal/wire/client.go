@@ -16,8 +16,7 @@ type Client struct {
 	Host string
 	Port int
 
-	lastSeq int
-	conn    *websocket.Conn
+	conn *websocket.Conn
 
 	outbox   chan *pending
 	resolved chan Response
@@ -132,11 +131,10 @@ func (c *Client) readLoop(notifications chan<- Response) {
 func (c *Client) writeLoop() {
 	sent := make(map[int]*pending)
 
-	for {
+	for seq := 1; true; seq++ {
 		select {
 		case p := <-c.outbox:
-			c.lastSeq++
-			req := Request{c.lastSeq, p.v}
+			req := Request{seq, p.v}
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
@@ -161,7 +159,7 @@ func (c *Client) writeLoop() {
 				break
 			}
 			c.Child("write-frame").Info(string(b))
-			sent[c.lastSeq] = p
+			sent[seq] = p
 
 		case res := <-c.resolved:
 			p, ok := sent[res.Re]
