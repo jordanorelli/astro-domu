@@ -18,10 +18,6 @@ type UI struct {
 	room       *wire.Room
 	client     *wire.Client
 
-	msgCount   int
-	showCount  int
-	clearCount int
-
 	statusBar *statusBar
 	gameView  *gameView
 	chatView  *chatView
@@ -66,9 +62,7 @@ func (ui *UI) Run() {
 		Log:     ui.Child("chat-view"),
 		history: make([]sim.ChatMessage, 0, 32),
 	}
-	ui.statusBar = &statusBar{
-		ui: ui,
-	}
+	ui.statusBar = &statusBar{}
 	ui.focussed = ui.gameView
 
 	ui.Info("running ui")
@@ -117,14 +111,14 @@ func (ui *UI) setupTerminal() {
 }
 
 func (ui *UI) clearTerminal() {
-	ui.clearCount++
+	ui.statusBar.clearCount++
 	ui.screen.Clear()
 	ui.screen.Fini()
 }
 
 func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	for n := range c {
-		ui.msgCount++
+		ui.statusBar.msgCount++
 		if ui.handleNotification(n.Body) {
 			if ui.gameView != nil {
 				ui.render()
@@ -133,7 +127,7 @@ func (ui *UI) handleNotifications(c <-chan wire.Response) {
 	}
 	ui.Info("notifications channel is closed so we must be done")
 	ui.Info("clearing and finalizing screen from notifications goroutine")
-	ui.clearCount++
+	ui.statusBar.clearCount++
 	ui.screen.Clear()
 	ui.screen.Fini()
 	ui.Info("screen finalized")
@@ -200,7 +194,7 @@ func (ui *UI) writeString(x, y int, s string, style tcell.Style) {
 }
 
 func (ui *UI) handleUserInput() bool {
-	ui.clearCount++
+	ui.statusBar.clearCount++
 	ui.screen.Clear()
 	ui.render()
 
@@ -234,10 +228,10 @@ func (ui *UI) handleUserInput() bool {
 		}
 
 		ui.focussed.handleEvent(ui, e)
-		ui.clearCount++
+		ui.statusBar.clearCount++
 		ui.screen.Clear()
 		ui.render()
-		ui.showCount++
+		ui.statusBar.showCount++
 		ui.screen.Show()
 	HANDLED:
 	}
@@ -265,6 +259,6 @@ func (ui *UI) render() {
 		b.blit(ui.screen, math.Vec{0, gameViewHeight + 1})
 	}
 
-	ui.showCount++
+	ui.statusBar.showCount++
 	ui.screen.Show()
 }
