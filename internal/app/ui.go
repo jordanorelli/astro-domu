@@ -20,6 +20,7 @@ type UI struct {
 
 	statusBar *statusBar
 	gameView  *gameView
+	testList  *menuList
 	chatView  *chatView
 	focussed  view
 }
@@ -63,6 +64,10 @@ func (ui *UI) Run() {
 		history: make([]sim.ChatMessage, 0, 32),
 	}
 	ui.statusBar = &statusBar{}
+	ui.testList = &menuList{
+		Log:     ui.Child("menu-list"),
+		choices: []string{"apple", "banana", "orange"},
+	}
 	ui.focussed = ui.gameView
 
 	ui.Info("running ui")
@@ -217,9 +222,12 @@ func (ui *UI) handleUserInput() bool {
 			if key == tcell.KeyTab {
 				ui.Info("saw tab from keyboard input, switching focussed view")
 				ui.focussed.setFocus(false)
-				if ui.focussed == ui.gameView {
+				switch ui.focussed {
+				case ui.gameView:
 					ui.focussed = ui.chatView
-				} else {
+				case ui.chatView:
+					ui.focussed = ui.testList
+				case ui.testList:
 					ui.focussed = ui.gameView
 				}
 				ui.focussed.setFocus(true)
@@ -252,7 +260,11 @@ func (ui *UI) render() {
 		ui.gameView.draw(b)
 		b.blit(ui.screen, math.Vec{0, 1})
 	}
-
+	{
+		b := newBuffer(width/2, gameViewHeight)
+		ui.testList.draw(b)
+		b.blit(ui.screen, math.Vec{width / 2, 1})
+	}
 	{
 		b := newBuffer(width, height-gameViewHeight-1)
 		ui.chatView.draw(b)
