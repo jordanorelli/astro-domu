@@ -51,6 +51,7 @@ func (c *chatView) handleEvent(e tcell.Event) change {
 
 func (c *chatView) draw(img canvas, st *state) {
 	bounds := img.bounds()
+	fill(img, tcell.StyleDefault.Background(tcell.NewRGBColor(32, 32, 32)))
 	chatHeight := bounds.Height - 1
 	for i := 0; i < math.Min(chatHeight, len(c.history)); i++ {
 		msg := c.history[len(c.history)-1-i]

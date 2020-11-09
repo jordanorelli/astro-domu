@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/wire"
 )
 
@@ -38,19 +37,5 @@ func (l login) exec(ui *UI) {
 	// e := room.Entities[p.Avatar]
 	ui.state.room = &room
 
-	ui.root = &containerView{
-		children: []*node{
-			{
-				frame: math.Rect{math.Vec{0, 0}, 20, 20},
-				view: &gameView{
-					Log: ui.Child("game-view"),
-				},
-			},
-			{
-				frame: math.Rect{math.Vec{0, 20}, 40, 20},
-				view:  &chatView{},
-			},
-		},
-	}
-	ui.Info("done logging in, we replaced the root view whaduheck")
+	ui.root = inGameView
 }

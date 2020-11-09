@@ -6,8 +6,10 @@ import (
 )
 
 type containerView struct {
-	children []*node
-	focussed int
+	refWidth  int
+	refHeight int
+	children  []*node
+	focussed  int
 }
 
 func (c *containerView) handleEvent(e tcell.Event) change {
@@ -23,8 +25,20 @@ func (c *containerView) handleEvent(e tcell.Event) change {
 }
 
 func (c *containerView) draw(img canvas, st *state) {
+	bounds := img.bounds()
+
 	for _, n := range c.children {
-		n.draw(cut(img, n.frame), st)
+		n.draw(cut(img, c.scaleFrame(n.frame, bounds)), st)
+	}
+}
+
+func (c *containerView) scaleFrame(frame math.Rect, bounds math.Rect) math.Rect {
+	xscale := bounds.Width / c.refWidth
+	yscale := bounds.Height / c.refHeight
+	return math.Rect{
+		Origin: math.Vec{xscale * frame.Origin.X, yscale * frame.Origin.Y},
+		Width:  xscale * frame.Width,
+		Height: yscale * frame.Height,
 	}
 }
 

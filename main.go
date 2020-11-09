@@ -30,7 +30,7 @@ func newLog(path string) *blammo.Log {
 
 func main() {
 	if len(os.Args) < 2 {
-		exit.WithMessage(1, "client or server?")
+		runClient()
 	}
 
 	switch os.Args[1] {

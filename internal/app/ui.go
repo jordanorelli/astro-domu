@@ -191,3 +191,18 @@ var joinForm = &form{
 		},
 	},
 }
+
+var inGameView = &containerView{
+	refWidth:  8,
+	refHeight: 8,
+	children: []*node{
+		{
+			frame: math.Rect{math.Vec{0, 0}, 4, 4},
+			view:  &gameView{},
+		},
+		{
+			frame: math.Rect{math.Vec{0, 4}, 8, 4},
+			view:  &chatView{},
+		},
+	},
+}
