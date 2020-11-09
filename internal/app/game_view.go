@@ -34,7 +34,7 @@ func (v *gameView) handleEvent(e tcell.Event) change {
 }
 
 func (v *gameView) draw(img canvas, st *state) {
-	fill(img, tcell.StyleDefault.Background(tcell.NewRGBColor(128, 128, 128)))
+	fill(img, tcell.StyleDefault.Background(tcell.NewRGBColor(0, 0, 12)))
 	v.drawHeader(img, st)
 
 	// fill in background dots first

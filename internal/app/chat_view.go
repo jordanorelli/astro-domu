@@ -48,18 +48,27 @@ func (c *chatView) handleEvent(e tcell.Event) change {
 
 func (c *chatView) draw(img canvas, st *state) {
 	bounds := img.bounds()
-	fill(img, tcell.StyleDefault.Background(tcell.NewRGBColor(32, 32, 32)))
+	style := tcell.StyleDefault.Background(tcell.NewRGBColor(32, 32, 32))
+	fill(img, style)
 	chatHeight := bounds.Height - 1
+
 	for i := 0; i < math.Min(chatHeight, len(st.history)); i++ {
 		msg := st.history[len(st.history)-1-i]
-		s := fmt.Sprintf("%12s: %s", msg.From, msg.Text)
-		writeString(img, s, math.Vec{0, bounds.Height - 2 - i}, tcell.StyleDefault)
+		nameText := fmt.Sprintf("%12s: ", msg.From)
+		if msg.From == st.playerName {
+			style := style.Foreground(tcell.NewRGBColor(255, 32, 32))
+			writeString(img, nameText, math.Vec{0, bounds.Height - 2 - i}, style)
+		} else {
+			style := style.Foreground(tcell.NewRGBColor(32, 32, 255))
+			writeString(img, nameText, math.Vec{0, bounds.Height - 2 - i}, style)
+		}
+		writeString(img, msg.Text, math.Vec{14, bounds.Height - 2 - i}, style)
 	}
 
-	writeString(img, c.composing, math.Vec{0, bounds.Height - 1}, tcell.StyleDefault)
+	writeString(img, c.composing, math.Vec{0, bounds.Height - 1}, style)
 
 	if c.inFocus {
-		cursor := tile{r: tcell.RuneBlock, style: tcell.StyleDefault.Blink(true)}
+		cursor := tile{r: tcell.RuneBlock, style: style.Blink(true)}
 		img.setTile(len([]rune(c.composing)), bounds.Height-1, cursor)
 	}
 }
