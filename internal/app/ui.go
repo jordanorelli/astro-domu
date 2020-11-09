@@ -128,7 +128,7 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 		return true
 
 	case *sim.ChatMessage:
-		// ui.chatView.history = append(ui.chatView.history, *n)
+		ui.state.history = append(ui.state.history, *n)
 		return true
 
 	default:

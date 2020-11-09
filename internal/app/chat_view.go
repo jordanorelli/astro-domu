@@ -11,7 +11,6 @@ import (
 type chatView struct {
 	composing string
 	inFocus   bool
-	history   []sim.ChatMessage
 }
 
 func (c *chatView) handleEvent(e tcell.Event) change {
@@ -51,8 +50,8 @@ func (c *chatView) draw(img canvas, st *state) {
 	bounds := img.bounds()
 	fill(img, tcell.StyleDefault.Background(tcell.NewRGBColor(32, 32, 32)))
 	chatHeight := bounds.Height - 1
-	for i := 0; i < math.Min(chatHeight, len(c.history)); i++ {
-		msg := c.history[len(c.history)-1-i]
+	for i := 0; i < math.Min(chatHeight, len(st.history)); i++ {
+		msg := st.history[len(st.history)-1-i]
 		s := fmt.Sprintf("%12s: %s", msg.From, msg.Text)
 		writeString(img, s, math.Vec{0, bounds.Height - 2 - i}, tcell.StyleDefault)
 	}
