@@ -6,7 +6,7 @@ import (
 
 type view interface {
 	handleEvent(tcell.Event) change
-	draw(*buffer, *state)
+	draw(canvas, *state)
 }
 
 type focusable interface {

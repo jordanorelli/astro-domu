@@ -33,35 +33,34 @@ func (v *gameView) handleEvent(e tcell.Event) change {
 	return nil
 }
 
-func (v *gameView) draw(b *buffer, st *state) {
-	v.drawHeader(b, st)
+func (v *gameView) draw(img canvas, st *state) {
+	v.drawHeader(img, st)
 
 	// fill in background dots first
 	for x := 0; x < st.room.Width; x++ {
 		for y := 0; y < st.room.Height; y++ {
-			b.set(x+1, y+2, tile{r: '·', style: tcell.StyleDefault})
+			img.setTile(x+1, y+2, tile{r: '·', style: tcell.StyleDefault})
 		}
 	}
-	b.set(0, 1, tile{r: '┌'})
-	b.set(st.room.Width+1, 1, tile{r: '┐'})
-	b.set(0, st.room.Height+2, tile{r: '└'})
-	b.set(st.room.Width+1, st.room.Height+2, tile{r: '┘'})
+	img.setTile(0, 1, tile{r: '┌'})
+	img.setTile(st.room.Width+1, 1, tile{r: '┐'})
+	img.setTile(0, st.room.Height+2, tile{r: '└'})
+	img.setTile(st.room.Width+1, st.room.Height+2, tile{r: '┘'})
 	for x := 0; x < st.room.Width; x++ {
-		b.set(x+1, 1, tile{r: '─'})
-		b.set(x+1, st.room.Height+2, tile{r: '─'})
+		img.setTile(x+1, 1, tile{r: '─'})
+		img.setTile(x+1, st.room.Height+2, tile{r: '─'})
 	}
 	for y := 0; y < st.room.Height; y++ {
-		b.set(0, y+2, tile{r: '│'})
-		b.set(st.room.Width+1, y+2, tile{r: '│'})
+		img.setTile(0, y+2, tile{r: '│'})
+		img.setTile(st.room.Width+1, y+2, tile{r: '│'})
 	}
 	for _, e := range st.room.Entities {
 		pos := e.Position
-		b.set(pos.X+1, pos.Y+2, tile{r: e.Glyph, style: tcell.StyleDefault})
+		img.setTile(pos.X+1, pos.Y+2, tile{r: e.Glyph, style: tcell.StyleDefault})
 	}
-
 }
 
-func (v *gameView) drawHeader(b *buffer, st *state) {
+func (v *gameView) drawHeader(img canvas, st *state) {
 	// the first row is the name of the room that we're currently in
 	var style tcell.Style
 	style = style.Background(tcell.NewRGBColor(64, 64, 128))
@@ -69,11 +68,12 @@ func (v *gameView) drawHeader(b *buffer, st *state) {
 
 	runes := []rune(st.room.Name)
 
-	for i := 0; i < b.width; i++ {
+	bounds := img.bounds()
+	for i := 0; i < bounds.Width; i++ {
 		if i < len(runes) {
-			b.set(i, 0, tile{r: runes[i], style: style})
+			img.setTile(i, 0, tile{r: runes[i], style: style})
 		} else {
-			b.set(i, 0, tile{r: ' ', style: style})
+			img.setTile(i, 0, tile{r: ' ', style: style})
 		}
 	}
 }
@@ -86,5 +86,5 @@ type move struct {
 }
 
 func (m move) exec(ui *UI) {
-	ui.client.Send(sim.Move{m.x, m.y})
+	go ui.client.Send(sim.Move{m.x, m.y})
 }

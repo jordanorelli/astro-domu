@@ -16,7 +16,7 @@ type chatView struct {
 	history   []sim.ChatMessage
 }
 
-func (c *chatView) handleEvent(ui *UI, e tcell.Event) bool {
+func (c *chatView) handleEvent(e tcell.Event) change {
 	switch t := e.(type) {
 	case *tcell.EventKey:
 		key := t.Key()
@@ -31,10 +31,11 @@ func (c *chatView) handleEvent(ui *UI, e tcell.Event) bool {
 		}
 
 		if key == tcell.KeyEnter {
-			// ugh lol
-			go ui.client.Send(sim.SendChatMessage{Text: c.composing})
 			c.composing = ""
-			break
+			return changeFn(func(ui *UI) {
+				// ugh lol
+				go ui.client.Send(sim.SendChatMessage{Text: c.composing})
+			})
 		}
 
 		if key == tcell.KeyRune {
@@ -45,22 +46,23 @@ func (c *chatView) handleEvent(ui *UI, e tcell.Event) bool {
 	default:
 		// ui.Debug("screen saw unhandled event of type %T", e)
 	}
-	return false
+	return nil
 }
 
-func (c *chatView) draw(b *buffer) {
-	chatHeight := b.height - 1
+func (c *chatView) draw(img canvas, st *state) {
+	bounds := img.bounds()
+	chatHeight := bounds.Height - 1
 	for i := 0; i < math.Min(chatHeight, len(c.history)); i++ {
 		msg := c.history[len(c.history)-1-i]
 		s := fmt.Sprintf("%12s: %s", msg.From, msg.Text)
-		b.writeString(s, math.Vec{0, b.height - 2 - i}, tcell.StyleDefault)
+		writeString(img, s, math.Vec{0, bounds.Height - 2 - i}, tcell.StyleDefault)
 	}
 
-	b.writeString(c.composing, math.Vec{0, b.height - 1}, tcell.StyleDefault)
+	writeString(img, c.composing, math.Vec{0, bounds.Height - 1}, tcell.StyleDefault)
 
 	if c.inFocus {
 		cursor := tile{r: tcell.RuneBlock, style: tcell.StyleDefault.Blink(true)}
-		b.set(len([]rune(c.composing)), b.height-1, cursor)
+		img.setTile(len([]rune(c.composing)), bounds.Height-1, cursor)
 	}
 }
 

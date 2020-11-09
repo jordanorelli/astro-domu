@@ -36,6 +36,6 @@ func (t *textInput) handleEvent(e tcell.Event) change {
 	return nil
 }
 
-func (t *textInput) draw(b *buffer, _ *state) {
-	b.writeString(t.prompt+t.entered, math.Vec{0, 0}, tcell.StyleDefault)
+func (t *textInput) draw(img canvas, _ *state) {
+	writeString(img, t.prompt+t.entered, math.Vec{0, 0}, tcell.StyleDefault)
 }

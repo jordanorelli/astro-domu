@@ -18,7 +18,7 @@ type UI struct {
 	notifications <-chan wire.Response
 
 	state state
-	root  *node
+	root  view
 }
 
 func (ui *UI) Run() {
@@ -164,33 +164,29 @@ func (ui *UI) pollInput(c chan tcell.Event) {
 	}
 }
 
-var mainMenu = &node{
-	view: &menuList{
-		choices: []menuItem{
-			menuItem{
-				name: "join",
-				onSelect: changeFn(func(ui *UI) {
-					ui.root = joinForm
-				}),
-			},
-			menuItem{
-				name: "exit",
-				onSelect: changeFn(func(ui *UI) {
-					panic("this is bad programming")
-				}),
-			},
+var mainMenu = &menuList{
+	choices: []menuItem{
+		menuItem{
+			name: "join",
+			onSelect: changeFn(func(ui *UI) {
+				ui.root = joinForm
+			}),
+		},
+		menuItem{
+			name: "exit",
+			onSelect: changeFn(func(ui *UI) {
+				panic("this is bad programming")
+			}),
 		},
 	},
 }
 
-var joinForm = &node{
-	view: &form{
-		fields: []textField{
-			textField{
-				label: "What is your name?",
-				textInput: textInput{
-					prompt: "> ",
-				},
+var joinForm = &form{
+	fields: []textField{
+		textField{
+			label: "What is your name?",
+			textInput: textInput{
+				prompt: "> ",
 			},
 		},
 	},

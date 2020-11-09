@@ -22,10 +22,10 @@ func (f *form) handleEvent(e tcell.Event) change {
 	return f.fields[0].handleEvent(e)
 }
 
-func (f *form) draw(b *buffer, _ *state) {
+func (f *form) draw(img canvas, _ *state) {
 	for i, field := range f.fields {
-		b.writeString(field.label, math.Vec{0, i * 2}, tcell.StyleDefault)
-		b.writeString(field.prompt+field.entered, math.Vec{0, i*2 + 1}, tcell.StyleDefault)
+		writeString(img, field.label, math.Vec{0, i * 2}, tcell.StyleDefault)
+		writeString(img, field.prompt+field.entered, math.Vec{0, i*2 + 1}, tcell.StyleDefault)
 	}
 }
 

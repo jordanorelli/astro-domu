@@ -21,29 +21,20 @@ func newBuffer(width, height int) *buffer {
 	return b
 }
 
-func (b *buffer) set(x, y int, t tile) bool {
+func (b *buffer) setTile(x, y int, t tile) {
 	n := y*b.width + x
 	if n >= len(b.tiles) {
-		return false
+		return
 	}
 	b.tiles[n] = t
-	return true
 }
 
-func (b *buffer) get(x, y int) (tile, bool) {
+func (b *buffer) getTile(x, y int) tile {
 	n := y*b.width + x
 	if n >= len(b.tiles) {
-		return tile{}, false
+		return tile{}
 	}
-	return b.tiles[n], true
-}
-
-func (b *buffer) writeString(s string, start math.Vec, style tcell.Style) {
-	for i, r := range []rune(s) {
-		if !b.set(start.X+i, start.Y, tile{r: r, style: style}) {
-			break
-		}
-	}
+	return b.tiles[n]
 }
 
 func (b *buffer) clear() {
@@ -55,10 +46,8 @@ func (b *buffer) clear() {
 func (b *buffer) blit(s tcell.Screen, offset math.Vec) {
 	for x := 0; x < b.width; x++ {
 		for y := 0; y < b.height; y++ {
-			t, ok := b.get(x, y)
-			if ok {
-				s.SetContent(x+offset.X, y+offset.Y, t.r, nil, t.style)
-			}
+			t := b.getTile(x, y)
+			s.SetContent(x+offset.X, y+offset.Y, t.r, nil, t.style)
 		}
 	}
 }
@@ -66,7 +55,9 @@ func (b *buffer) blit(s tcell.Screen, offset math.Vec) {
 func (b *buffer) fill(style tcell.Style) {
 	for x := 0; x < b.width; x++ {
 		for y := 0; y < b.height; y++ {
-			b.set(x, y, tile{r: ' ', style: style})
+			b.setTile(x, y, tile{r: ' ', style: style})
 		}
 	}
 }
+
+func (b *buffer) bounds() math.Rect { return math.Rect{Width: b.width, Height: b.height} }

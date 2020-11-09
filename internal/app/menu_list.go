@@ -32,12 +32,12 @@ func (m *menuList) handleEvent(e tcell.Event) change {
 	return nil
 }
 
-func (m *menuList) draw(b *buffer, _ *state) {
+func (m *menuList) draw(img canvas, _ *state) {
 	for i, choice := range m.choices {
 		if i == m.highlight {
-			b.writeString("▷ "+choice.name, math.Vec{0, i}, tcell.StyleDefault)
+			writeString(img, "▷ "+choice.name, math.Vec{0, i}, tcell.StyleDefault)
 		} else {
-			b.writeString("  "+choice.name, math.Vec{0, i}, tcell.StyleDefault)
+			writeString(img, "  "+choice.name, math.Vec{0, i}, tcell.StyleDefault)
 		}
 	}
 }
