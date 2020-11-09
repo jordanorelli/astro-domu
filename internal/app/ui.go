@@ -201,12 +201,12 @@ var inGameView = &containerView{
 	children: []*node{
 		{
 			frame: math.Rect{math.Vec{0, 0}, 4, 4},
-			view:  borderedView{&gameView{}},
+			view:  &borderedView{inner: &gameView{}},
 		},
 		{
 			frame: math.Rect{math.Vec{4, 0}, 4, 4},
-			view: borderedView{
-				&menuList{
+			view: &borderedView{
+				inner: &menuList{
 					choices: []menuItem{
 						menuItem{name: "chocolate"},
 						menuItem{name: "vanilla"},
@@ -218,7 +218,7 @@ var inGameView = &containerView{
 		},
 		{
 			frame: math.Rect{math.Vec{0, 4}, 8, 4},
-			view:  borderedView{inner: &chatView{}},
+			view:  &borderedView{inner: &chatView{}},
 		},
 	},
 }

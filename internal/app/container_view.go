@@ -13,8 +13,12 @@ type containerView struct {
 }
 
 func (c *containerView) handleEvent(e tcell.Event) change {
-	switch e.(type) {
+	switch v := e.(type) {
 	case *tcell.EventKey:
+		if v.Key() == tcell.KeyTab {
+			c.nextFocus()
+			return nil
+		}
 		return c.children[c.focussed].handleEvent(e)
 
 	default:
@@ -22,6 +26,28 @@ func (c *containerView) handleEvent(e tcell.Event) change {
 	}
 
 	return nil
+}
+
+func (c *containerView) nextFocus() {
+	setFocus := func(i int, enabled bool) bool {
+		n := c.children[i]
+		if v, ok := n.view.(focusable); ok {
+			v.setFocus(enabled)
+			return true
+		}
+		return false
+	}
+
+	for start, next := c.focussed, c.focussed+1; next != start; next++ {
+		if next >= len(c.children) {
+			next = 0
+		}
+		if setFocus(next, true) {
+			c.focussed = next
+			setFocus(start, false)
+			return
+		}
+	}
 }
 
 func (c *containerView) draw(img canvas, st *state) {

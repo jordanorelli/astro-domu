@@ -6,11 +6,9 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/sim"
-	"github.com/jordanorelli/blammo"
 )
 
 type chatView struct {
-	*blammo.Log
 	composing string
 	inFocus   bool
 	history   []sim.ChatMessage
@@ -31,16 +29,16 @@ func (c *chatView) handleEvent(e tcell.Event) change {
 		}
 
 		if key == tcell.KeyEnter {
+			msg := c.composing
 			c.composing = ""
 			return changeFn(func(ui *UI) {
 				// ugh lol
-				go ui.client.Send(sim.SendChatMessage{Text: c.composing})
+				go ui.client.Send(sim.SendChatMessage{Text: msg})
 			})
 		}
 
 		if key == tcell.KeyRune {
 			c.composing = fmt.Sprintf("%s%c", c.composing, t.Rune())
-			c.Info("composing: %v", c.composing)
 		}
 
 	default:
