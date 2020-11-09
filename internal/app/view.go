@@ -5,7 +5,18 @@ import (
 )
 
 type view interface {
-	handleEvent(*UI, tcell.Event) bool
-	draw(*buffer)
+	handleEvent(tcell.Event) change
+	draw(*buffer, *state)
+}
+
+type focusable interface {
 	setFocus(bool)
 }
+
+type change interface {
+	exec(*UI)
+}
+
+type changeFn func(*UI)
+
+func (f changeFn) exec(ui *UI) { f(ui) }

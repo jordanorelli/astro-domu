@@ -164,7 +164,7 @@ func (c *Client) writeLoop() {
 		case res := <-c.resolved:
 			p, ok := sent[res.Re]
 			if !ok {
-				c.Error("saw response for unknown seq %d")
+				c.Error("saw response for unknown seq %d", res.Re)
 				break
 			}
 			delete(sent, res.Re)

@@ -35,7 +35,7 @@ func main() {
 
 	switch os.Args[1] {
 	case "client":
-		runClient(os.Args[2])
+		runClient()
 	case "server":
 		s := sim.Server{}
 		if err := s.Start("cdm.jordanorelli.com", 12805); err != nil {
@@ -51,7 +51,7 @@ func main() {
 	}
 }
 
-func runClient(name string) {
+func runClient() {
 	log := newLog("./astro.log").Child("client")
 
 	start := time.Now()
@@ -63,8 +63,7 @@ func runClient(name string) {
 	}()
 
 	app := app.UI{
-		Log:        log.Child("ui"),
-		PlayerName: name,
+		Log: log.Child("ui"),
 	}
 	app.Run()
 }

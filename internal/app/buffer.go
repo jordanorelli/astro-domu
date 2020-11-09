@@ -13,8 +13,11 @@ type buffer struct {
 }
 
 func newBuffer(width, height int) *buffer {
-	b := &buffer{width: width, height: height}
-	b.clear()
+	b := &buffer{
+		width:  width,
+		height: height,
+		tiles:  make([]tile, width*height),
+	}
 	return b
 }
 
@@ -43,7 +46,11 @@ func (b *buffer) writeString(s string, start math.Vec, style tcell.Style) {
 	}
 }
 
-func (b *buffer) clear() { b.tiles = make([]tile, b.width*b.height) }
+func (b *buffer) clear() {
+	for i, _ := range b.tiles {
+		b.tiles[i] = tile{}
+	}
+}
 
 func (b *buffer) blit(s tcell.Screen, offset math.Vec) {
 	for x := 0; x < b.width; x++ {

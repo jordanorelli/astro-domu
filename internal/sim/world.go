@@ -224,7 +224,7 @@ func (w *world) register(c connect) {
 		outbox: make(chan wire.Response, 8),
 		pending: &Request{
 			From:  c.login.Name,
-			Seq:   1,
+			Seq:   90,
 			Wants: &spawnPlayer{},
 		},
 	}
