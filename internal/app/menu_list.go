@@ -33,6 +33,7 @@ func (m *menuList) handleEvent(e tcell.Event) change {
 }
 
 func (m *menuList) draw(img canvas, _ *state) {
+	fill(img, tcell.StyleDefault.Background(tcell.NewRGBColor(64, 32, 32)))
 	for i, choice := range m.choices {
 		if i == m.highlight {
 			writeString(img, "▷ "+choice.name, math.Vec{0, i}, tcell.StyleDefault)

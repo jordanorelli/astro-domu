@@ -49,6 +49,9 @@ func (ui *UI) Run() {
 					ui.Info("saw ctrl+c keyboard input, shutting down")
 					return
 				}
+			case *tcell.EventResize:
+				width, height = ui.screen.Size()
+				b = newBuffer(width, height)
 			}
 			ui.Info("input event: %v", e)
 			wants := ui.root.handleEvent(e)
@@ -199,6 +202,17 @@ var inGameView = &containerView{
 		{
 			frame: math.Rect{math.Vec{0, 0}, 4, 4},
 			view:  &gameView{},
+		},
+		{
+			frame: math.Rect{math.Vec{4, 0}, 4, 4},
+			view: &menuList{
+				choices: []menuItem{
+					menuItem{name: "chocolate"},
+					menuItem{name: "vanilla"},
+					menuItem{name: "strawberry"},
+					menuItem{name: "banana"},
+				},
+			},
 		},
 		{
 			frame: math.Rect{math.Vec{0, 4}, 8, 4},
