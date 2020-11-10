@@ -40,6 +40,8 @@ func (v *gameView) walkHandler(e *tcell.EventKey) change {
 			return move{0, 1}
 		case 'd':
 			return move{1, 0}
+		case 'i':
+			return openInventory{}
 		case 'l':
 			v.keyHandler = v.lookHandler
 			v.statusLine = "(look)"

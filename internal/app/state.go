@@ -10,6 +10,7 @@ type state struct {
 	playerName string
 	room       *wire.Room
 	history    []sim.ChatMessage
+	inventory  inventory
 	detail     view
 }
 

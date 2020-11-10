@@ -50,6 +50,23 @@ func (c *containerView) nextFocus() {
 	}
 }
 
+func (c *containerView) focus(n int) {
+	if c.focussed == n {
+		return
+	}
+
+	cur := c.children[c.focussed]
+	if v, ok := cur.view.(focusable); ok {
+		v.setFocus(false)
+	}
+
+	c.focussed = n
+	cur = c.children[c.focussed]
+	if v, ok := cur.view.(focusable); ok {
+		v.setFocus(true)
+	}
+}
+
 func (c *containerView) draw(img canvas, st *state) {
 	bounds := img.bounds()
 
