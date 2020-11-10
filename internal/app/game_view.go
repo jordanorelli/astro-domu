@@ -60,19 +60,19 @@ func (v *gameView) lookHandler(e *tcell.EventKey) change {
 		case 'w':
 			v.keyHandler = v.walkHandler
 			v.statusLine = "(walk)"
-			return lookAt{0, -1}
+			return &lookAt{x: 0, y: -1}
 		case 'a':
 			v.keyHandler = v.walkHandler
 			v.statusLine = "(walk)"
-			return lookAt{-1, 0}
+			return &lookAt{x: -1, y: 0}
 		case 's':
 			v.keyHandler = v.walkHandler
 			v.statusLine = "(walk)"
-			return lookAt{0, 1}
+			return &lookAt{x: 0, y: 1}
 		case 'd':
 			v.keyHandler = v.walkHandler
 			v.statusLine = "(walk)"
-			return lookAt{1, 0}
+			return &lookAt{x: 1, y: 0}
 		}
 	}
 	return nil
@@ -83,9 +83,10 @@ func (v *gameView) draw(img canvas, st *state) {
 	v.drawHeader(img, st)
 
 	// fill in background dots first
+	dim := tcell.StyleDefault.Foreground(tcell.NewRGBColor(76, 72, 83))
 	for x := 0; x < st.room.Width; x++ {
 		for y := 0; y < st.room.Height; y++ {
-			img.setTile(x+1, y+2, tile{r: '·', style: tcell.StyleDefault})
+			img.setTile(x+1, y+2, tile{r: '·', style: dim})
 		}
 	}
 	img.setTile(0, 1, tile{r: '┌'})
@@ -137,11 +138,12 @@ func (m move) exec(ui *UI) {
 }
 
 type lookAt struct {
-	x int
-	y int
+	x       int
+	y       int
+	results *sim.Look
 }
 
-func (l lookAt) exec(ui *UI) {
+func (l *lookAt) exec(ui *UI) {
 	go func() {
 		res, err := ui.client.Send(sim.LookAt{l.x, l.y})
 		if err != nil {
@@ -155,6 +157,25 @@ func (l lookAt) exec(ui *UI) {
 			return
 		}
 
-		ui.Info("look: %v", look)
+		l.results = look
+		ui.misc <- func(ui *UI) {
+			ui.Info("setting detail view to %T", l)
+			ui.state.detail = l
+		}
 	}()
+}
+
+func (l *lookAt) handleEvent(e tcell.Event) change {
+	return nil
+}
+
+func (l *lookAt) draw(img canvas, st *state) {
+	if len(l.results.Here) == 0 {
+		writeString(img, "there's nothing here...", math.Vec{0, 0}, tcell.StyleDefault)
+		return
+	}
+
+	for i, item := range l.results.Here {
+		writeString(img, item.Name, math.Vec{0, i}, tcell.StyleDefault)
+	}
 }

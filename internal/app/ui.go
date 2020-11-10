@@ -68,6 +68,8 @@ func (ui *UI) Run() {
 		case n := <-notify:
 			ui.Info("notification: %v", n)
 			ui.handleNotification(n.Body)
+		case f := <-ui.misc:
+			f(ui)
 		}
 	}
 }
@@ -212,14 +214,7 @@ var inGameView = &containerView{
 		{
 			frame: math.Rect{math.Vec{4, 0}, 4, 4},
 			view: &borderedView{
-				inner: &menuList{
-					choices: []menuItem{
-						menuItem{name: "chocolate"},
-						menuItem{name: "vanilla"},
-						menuItem{name: "strawberry"},
-						menuItem{name: "banana"},
-					},
-				},
+				inner: &detailView{},
 			},
 		},
 		{
