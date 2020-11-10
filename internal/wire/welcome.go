@@ -1,8 +1,9 @@
 package wire
 
 type Welcome struct {
-	Rooms   map[string]Room   `json:"rooms"`
-	Players map[string]Player `json:"players"`
+	Rooms     map[string]Room   `json:"rooms"`
+	Players   map[string]Player `json:"players"`
+	Inventory []Entity          `json:"inventory"`
 }
 
 func (Welcome) NetTag() string { return "welcome" }

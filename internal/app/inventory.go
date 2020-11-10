@@ -19,6 +19,15 @@ type inventoryView struct {
 }
 
 func (v *inventoryView) handleEvent(e tcell.Event) change {
+	if k, ok := e.(*tcell.EventKey); ok {
+		if k.Key() == tcell.KeyESC {
+			return changeFn(func(ui *UI) {
+				if ui.root == inGameView {
+					inGameView.focus(0)
+				}
+			})
+		}
+	}
 	return nil
 }
 

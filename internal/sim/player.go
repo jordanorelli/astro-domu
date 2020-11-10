@@ -13,19 +13,22 @@ import (
 
 type player struct {
 	*blammo.Log
-	name     string
-	outbox   chan wire.Response
-	pending  *Request
-	avatar   *entity
-	stop     chan bool
-	fullSync bool
+	name      string
+	outbox    chan wire.Response
+	pending   *Request
+	avatar    *entity
+	inventory []*entity
+	stop      chan bool
+	fullSync  bool
 }
 
 func (p *player) start(c chan Request, conn *websocket.Conn, r *room) {
 	welcome := wire.Welcome{
-		Rooms:   make(map[string]wire.Room),
-		Players: make(map[string]wire.Player),
+		Rooms:     make(map[string]wire.Room),
+		Players:   make(map[string]wire.Player),
+		Inventory: make([]wire.Entity, 0),
 	}
+	p.inventory = make([]*entity, 0, 16)
 	ents := make(map[int]wire.Entity)
 	for id, e := range r.allEntities() {
 		ents[id] = wire.Entity{
@@ -262,6 +265,7 @@ func (pu *Pickup) exec(w *world, r *room, pl *player, seq int) result {
 			return result{reply: wire.Errorf("the %s cannot be picked up", e.name)}
 		}
 		nextTile.here = nextTile.here[0:0]
+		pl.inventory = append(pl.inventory, e)
 		return result{reply: Pickedup{Name: e.name}}
 	}
 	return result{reply: wire.Errorf("nothing here")}
