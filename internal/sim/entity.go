@@ -14,6 +14,7 @@ type entity struct {
 	description string
 	solid       bool `json:"-"`
 	overlapped  map[int]*entity
+	pickupable  bool
 	behavior
 }
 

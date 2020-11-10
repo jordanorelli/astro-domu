@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/sim"
+	"github.com/jordanorelli/astro-domu/internal/wire"
 	"github.com/jordanorelli/blammo"
 )
 
@@ -225,19 +226,24 @@ func (p pickup) exec(ui *UI) {
 	go func() {
 		res, err := ui.client.Send(sim.Pickup{p.x, p.y})
 		if err != nil {
-			ui.Error("look error: %v", err)
+			ui.state.detail = textView(err.Error())
 			return
 		}
 
-		pickedup, ok := res.Body.(*sim.Pickedup)
-		if !ok {
-			ui.Error("pickup response is not pickedup: %v", res.Body)
-			return
-		}
-
-		ui.misc <- func(ui *UI) {
-			ui.state.detail = textView(fmt.Sprintf("you picked up: %s", pickedup.Name))
-			ui.state.inventory.items = append(ui.state.inventory.items, item{name: pickedup.Name})
+		switch v := res.Body.(type) {
+		case *sim.Pickedup:
+			ui.misc <- func(ui *UI) {
+				ui.state.detail = textView(fmt.Sprintf("you picked up: %s", v.Name))
+				ui.state.inventory.items = append(ui.state.inventory.items, item{name: v.Name})
+			}
+		case wire.Error:
+			ui.misc <- func(ui *UI) {
+				ui.state.detail = textView(v.Error())
+			}
+		default:
+			ui.misc <- func(ui *UI) {
+				ui.state.detail = textView(fmt.Sprintf("unexpected pickup response type: %T", res.Body))
+			}
 		}
 	}()
 }

@@ -258,6 +258,9 @@ func (pu *Pickup) exec(w *world, r *room, pl *player, seq int) result {
 	nextTile := r.getTile(target)
 	if len(nextTile.here) == 1 {
 		e := nextTile.here[0]
+		if !e.pickupable {
+			return result{reply: wire.Errorf("the %s cannot be picked up", e.name)}
+		}
 		nextTile.here = nextTile.here[0:0]
 		return result{reply: Pickedup{Name: e.name}}
 	}
