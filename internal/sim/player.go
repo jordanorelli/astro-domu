@@ -221,8 +221,37 @@ func (m *Move) exec(w *world, r *room, p *player, seq int) result {
 	return result{reply: wire.OK{}}
 }
 
+type LookAt math.Vec
+
+func (LookAt) NetTag() string { return "look-at" }
+
+func (l *LookAt) exec(w *world, r *room, p *player, seq int) result {
+	pos := p.avatar.Position
+	target := pos.Add(math.Vec(*l))
+	nextTile := r.getTile(target)
+	p.Info("looked at: %v", nextTile)
+
+	look := &Look{Here: make([]LookItem, 0, len(nextTile.here))}
+	for _, e := range nextTile.here {
+		look.Here = append(look.Here, LookItem{Name: e.name})
+	}
+	return result{reply: look}
+}
+
+type Look struct {
+	Here []LookItem `json:"here"`
+}
+
+func (l Look) NetTag() string { return "look" }
+
+type LookItem struct {
+	Name string `json:"name"`
+}
+
 var lastEntityID = 0
 
 func init() {
 	wire.Register(func() wire.Value { return new(Move) })
+	wire.Register(func() wire.Value { return new(Look) })
+	wire.Register(func() wire.Value { return new(LookAt) })
 }

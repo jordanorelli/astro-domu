@@ -7,11 +7,13 @@ import (
 )
 
 type entity struct {
-	ID         int      `json:"id"`
-	Position   math.Vec `json:"pos"`
-	Glyph      rune     `json:"glyph"`
-	solid      bool     `json:"-"`
-	overlapped map[int]*entity
+	ID          int      `json:"id"`
+	Position    math.Vec `json:"pos"`
+	Glyph       rune     `json:"glyph"`
+	name        string
+	description string
+	solid       bool `json:"-"`
+	overlapped  map[int]*entity
 	behavior
 }
 

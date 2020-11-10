@@ -42,29 +42,31 @@ func newWorld(log *blammo.Log) *world {
 	foyer.addEntity(&entity{
 		ID:       -1,
 		Position: math.Vec{5, 4},
-		Glyph:    'd',
+		Glyph:    'o',
 		solid:    true,
+		name:     "a rock",
 		behavior: doNothing{},
 	})
 
-	foyer.addEntity(&entity{
-		ID:       -2,
-		Position: math.Vec{9, 0},
-		Glyph:    '+',
-		behavior: doNothing{},
-	})
+	// foyer.addEntity(&entity{
+	// 	ID:       -2,
+	// 	Position: math.Vec{9, 0},
+	// 	Glyph:    '+',
+	// 	behavior: doNothing{},
+	// })
 
-	foyer.addEntity(&entity{
-		ID:       -3,
-		Position: math.Vec{9, 1},
-		Glyph:    '-',
-		behavior: doNothing{},
-	})
+	// foyer.addEntity(&entity{
+	// 	ID:       -3,
+	// 	Position: math.Vec{9, 1},
+	// 	Glyph:    '-',
+	// 	behavior: doNothing{},
+	// })
 
 	foyer.addEntity(&entity{
 		ID:       -4,
 		Position: math.Vec{9, 5},
 		Glyph:    '◇',
+		name:     "Door to Hall",
 		behavior: &door{
 			Log:  log.Child("door"),
 			to:   "hall",
@@ -84,6 +86,7 @@ func newWorld(log *blammo.Log) *world {
 		ID:       -5,
 		Position: math.Vec{0, 2},
 		Glyph:    '◇',
+		name:     "Door to Foyer",
 		behavior: &door{
 			Log:  log.Child("door"),
 			to:   "foyer",
@@ -103,6 +106,7 @@ func newWorld(log *blammo.Log) *world {
 		ID:       -6,
 		Position: math.Vec{9, 7},
 		Glyph:    '◇',
+		name:     "Door to Kitchen",
 		behavior: &door{
 			Log:  log.Child("door"),
 			to:   "kitchen",
@@ -114,6 +118,7 @@ func newWorld(log *blammo.Log) *world {
 		ID:       -7,
 		Position: math.Vec{0, 2},
 		Glyph:    '◇',
+		name:     "Door to Foyer",
 		behavior: &door{
 			Log:  log.Child("door"),
 			to:   "foyer",

@@ -16,6 +16,7 @@ type UI struct {
 	screen        tcell.Screen
 	client        *wire.Client
 	notifications <-chan wire.Response
+	misc          chan func(*UI)
 
 	state state
 	root  view
@@ -24,6 +25,7 @@ type UI struct {
 func (ui *UI) Run() {
 	ui.setupTerminal()
 	defer ui.clearTerminal()
+	ui.misc = make(chan func(*UI))
 
 	ui.root = mainMenu
 
@@ -129,6 +131,10 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 
 	case *sim.ChatMessage:
 		ui.state.history = append(ui.state.history, *n)
+		return true
+
+	case *sim.Look:
+		ui.Info("got look back: %v", n)
 		return true
 
 	default:
