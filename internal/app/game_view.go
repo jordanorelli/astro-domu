@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/sim"
@@ -45,6 +47,9 @@ func (v *gameView) walkHandler(e *tcell.EventKey) change {
 		case 'l':
 			v.keyHandler = v.lookHandler
 			v.statusLine = "(look)"
+		case 'p':
+			v.keyHandler = v.pickupHandler
+			v.statusLine = "(pickup)"
 		}
 	}
 	return nil
@@ -75,6 +80,36 @@ func (v *gameView) lookHandler(e *tcell.EventKey) change {
 			v.keyHandler = v.walkHandler
 			v.statusLine = "(walk)"
 			return &lookAt{x: 1, y: 0}
+		}
+	}
+	return nil
+}
+
+func (v *gameView) pickupHandler(e *tcell.EventKey) change {
+	if e.Key() == tcell.KeyESC {
+		v.keyHandler = v.walkHandler
+		v.statusLine = "(walk)"
+		return nil
+	}
+
+	if e.Key() == tcell.KeyRune {
+		switch e.Rune() {
+		case 'w':
+			v.keyHandler = v.walkHandler
+			v.statusLine = "(walk)"
+			return &pickup{x: 0, y: -1}
+		case 'a':
+			v.keyHandler = v.walkHandler
+			v.statusLine = "(walk)"
+			return &pickup{x: -1, y: 0}
+		case 's':
+			v.keyHandler = v.walkHandler
+			v.statusLine = "(walk)"
+			return &pickup{x: 0, y: 1}
+		case 'd':
+			v.keyHandler = v.walkHandler
+			v.statusLine = "(walk)"
+			return &pickup{x: 1, y: 0}
 		}
 	}
 	return nil
@@ -180,4 +215,29 @@ func (l *lookAt) draw(img canvas, st *state) {
 	for i, item := range l.results.Here {
 		writeString(img, item.Name, math.Vec{0, i}, tcell.StyleDefault)
 	}
+}
+
+type pickup struct {
+	x, y int
+}
+
+func (p pickup) exec(ui *UI) {
+	go func() {
+		res, err := ui.client.Send(sim.Pickup{p.x, p.y})
+		if err != nil {
+			ui.Error("look error: %v", err)
+			return
+		}
+
+		pickedup, ok := res.Body.(*sim.Pickedup)
+		if !ok {
+			ui.Error("pickup response is not pickedup: %v", res.Body)
+			return
+		}
+
+		ui.misc <- func(ui *UI) {
+			ui.state.detail = textView(fmt.Sprintf("you picked up: %s", pickedup.Name))
+			ui.state.inventory.items = append(ui.state.inventory.items, item{name: pickedup.Name})
+		}
+	}()
 }

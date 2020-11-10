@@ -248,10 +248,34 @@ type LookItem struct {
 	Name string `json:"name"`
 }
 
+type Pickup math.Vec
+
+func (Pickup) NetTag() string { return "pickup" }
+
+func (pu *Pickup) exec(w *world, r *room, pl *player, seq int) result {
+	pos := pl.avatar.Position
+	target := pos.Add(math.Vec(*pu))
+	nextTile := r.getTile(target)
+	if len(nextTile.here) == 1 {
+		e := nextTile.here[0]
+		nextTile.here = nextTile.here[0:0]
+		return result{reply: Pickedup{Name: e.name}}
+	}
+	return result{reply: wire.Errorf("nothing here")}
+}
+
+type Pickedup struct {
+	Name string `json:"name"`
+}
+
+func (p Pickedup) NetTag() string { return "pickedup" }
+
 var lastEntityID = 0
 
 func init() {
 	wire.Register(func() wire.Value { return new(Move) })
 	wire.Register(func() wire.Value { return new(Look) })
 	wire.Register(func() wire.Value { return new(LookAt) })
+	wire.Register(func() wire.Value { return new(Pickup) })
+	wire.Register(func() wire.Value { return new(Pickedup) })
 }

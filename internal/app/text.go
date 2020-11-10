@@ -39,3 +39,11 @@ func (t *textInput) handleEvent(e tcell.Event) change {
 func (t *textInput) draw(img canvas, _ *state) {
 	writeString(img, t.prompt+t.entered, math.Vec{0, 0}, tcell.StyleDefault)
 }
+
+type textView string
+
+func (textView) handleEvent(tcell.Event) change { return nil }
+
+func (t textView) draw(img canvas, _ *state) {
+	writeString(img, string(t), math.Vec{0, 0}, tcell.StyleDefault)
+}

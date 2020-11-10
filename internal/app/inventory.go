@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/math"
 )
@@ -22,6 +24,10 @@ func (v *inventoryView) handleEvent(e tcell.Event) change {
 
 func (v *inventoryView) draw(img canvas, st *state) {
 	writeString(img, "Inventory", math.Vec{0, 0}, tcell.StyleDefault)
+	for i, item := range st.inventory.items {
+		line := fmt.Sprintf("- %s", item.name)
+		writeString(img, line, math.Vec{0, i + 2}, tcell.StyleDefault)
+	}
 }
 
 type openInventory struct{}
