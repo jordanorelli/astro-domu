@@ -13,7 +13,7 @@ type door struct {
 	arrived int
 }
 
-func (d *door) update(time.Duration) {}
+func (d *door) update(*entity, time.Duration) {}
 
 func (d *door) exec(w *world, r *room, p *player, seq int) result {
 	p.Info("executing door to %q for player %s", d.to, p.name)

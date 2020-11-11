@@ -79,9 +79,9 @@ func (e *entity) stopOverlap(e2 *entity) {
 
 type behavior interface {
 	// update is the standard tick function
-	update(time.Duration)
+	update(*entity, time.Duration)
 }
 
 type doNothing struct{}
 
-func (d doNothing) update(time.Duration) {}
+func (d doNothing) update(*entity, time.Duration) {}

@@ -165,7 +165,26 @@ func sendResponse(conn *websocket.Conn, res wire.Response) error {
 	return nil
 }
 
-func (p *player) update(dt time.Duration) {}
+func (p *player) removeItem(id int) *entity {
+	for i, e := range p.inventory {
+		if e.ID == id {
+			p.inventory = append(p.inventory[:i], p.inventory[i+1:]...)
+			return e
+		}
+	}
+	return nil
+}
+
+func (p *player) peekItem(id int) *entity {
+	for _, e := range p.inventory {
+		if e.ID == id {
+			return e
+		}
+	}
+	return nil
+}
+
+func (p *player) update(*entity, time.Duration) {}
 
 type spawnPlayer struct{}
 
@@ -178,6 +197,16 @@ func (s spawnPlayer) exec(w *world, r *room, p *player, seq int) result {
 		behavior: p,
 	}
 	p.avatar = &e
+
+	p.inventory = append(p.inventory, &entity{
+		ID:          <-w.nextID,
+		Glyph:       'p',
+		solid:       false,
+		name:        "a potato",
+		description: "it's a potato, what more information could you need?",
+		pickupable:  true,
+		behavior:    &potato{},
+	})
 
 	for n, _ := range r.tiles {
 		t := &r.tiles[n]
@@ -277,6 +306,41 @@ type Pickedup struct {
 
 func (p Pickedup) NetTag() string { return "pickedup" }
 
+type Putdown struct {
+	ID       int      `json:"id"`
+	Location math.Vec `json:"loc"`
+}
+
+func (pd *Putdown) exec(w *world, r *room, pl *player, seq int) result {
+	pos := pl.avatar.Position
+	if pos.MDist(pd.Location) > 1 {
+		return result{reply: wire.Errorf("destination tile %v is too far from your current location at %v", pd.Location, pos)}
+	}
+
+	nextTile := r.getTile(pd.Location)
+	if nextTile == nil {
+		return result{reply: wire.Errorf("no tile at location %v", pd.Location)}
+	}
+
+	item := pl.peekItem(pd.ID)
+	if item == nil {
+		return result{reply: wire.Errorf("you're not holding an item with ID %d", pd.ID)}
+	}
+
+	if item.solid {
+		for _, e := range nextTile.here {
+			if e.solid {
+				return result{reply: wire.Errorf("you can't put a %s on top of a %s", item.name, e.name)}
+			}
+		}
+	}
+
+	nextTile.addEntity(pl.removeItem(pd.ID))
+	return result{reply: wire.OK{}}
+}
+
+func (Putdown) NetTag() string { return "put-down" }
+
 var lastEntityID = 0
 
 func init() {
@@ -285,4 +349,5 @@ func init() {
 	wire.Register(func() wire.Value { return new(LookAt) })
 	wire.Register(func() wire.Value { return new(Pickup) })
 	wire.Register(func() wire.Value { return new(Pickedup) })
+	wire.Register(func() wire.Value { return new(Putdown) })
 }

@@ -50,6 +50,26 @@ func newWorld(log *blammo.Log) *world {
 	})
 
 	foyer.addEntity(&entity{
+		ID:         -2,
+		Position:   math.Vec{5, 5},
+		Glyph:      'o',
+		solid:      true,
+		pickupable: true,
+		name:       "another rock",
+		behavior:   doNothing{},
+	})
+
+	foyer.addEntity(&entity{
+		ID:         -3,
+		Position:   math.Vec{5, 6},
+		Glyph:      'o',
+		solid:      true,
+		pickupable: true,
+		name:       "yet another rock (YAR)",
+		behavior:   doNothing{},
+	})
+
+	foyer.addEntity(&entity{
 		ID:       -4,
 		Position: math.Vec{9, 5},
 		Glyph:    '◇',

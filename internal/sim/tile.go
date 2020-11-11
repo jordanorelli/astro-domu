@@ -62,7 +62,7 @@ func (t *tile) isOccupied() bool {
 
 func (t *tile) update(d time.Duration) {
 	for _, e := range t.here {
-		e.update(d)
+		e.update(e, d)
 	}
 }
 

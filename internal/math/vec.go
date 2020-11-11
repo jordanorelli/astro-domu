@@ -45,3 +45,6 @@ func (v Vec) Unit() Vec {
 	}
 	return out
 }
+
+// MDist calculates the manhattan distance between two vectors.
+func (v Vec) MDist(v2 Vec) int { return Abs(v.X-v2.X) + Abs(v.Y-v2.Y) }

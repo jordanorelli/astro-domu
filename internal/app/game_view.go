@@ -51,6 +51,9 @@ func (v *gameView) walkHandler(e *tcell.EventKey) change {
 		case 'p':
 			v.keyHandler = v.pickupHandler
 			v.statusLine = "(pickup)"
+		case 'P':
+			v.keyHandler = v.putdownHandler
+			v.statusLine = "(put down)"
 		}
 	}
 	return nil
@@ -113,6 +116,12 @@ func (v *gameView) pickupHandler(e *tcell.EventKey) change {
 			return &pickup{x: 1, y: 0}
 		}
 	}
+	return nil
+}
+
+func (v *gameView) putdownHandler(e *tcell.EventKey) change {
+	v.keyHandler = v.walkHandler
+	v.statusLine = "(walk)"
 	return nil
 }
 
