@@ -8,6 +8,7 @@ import (
 
 type state struct {
 	playerName string
+	avatar     *wire.Entity
 	room       *wire.Room
 	history    []sim.ChatMessage
 	inventory  inventory

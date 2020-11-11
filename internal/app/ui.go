@@ -102,6 +102,9 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 	switch n := v.(type) {
 
 	case *wire.Entity:
+		if ui.state.avatar != nil && n.ID == ui.state.avatar.ID {
+			*ui.state.avatar = *n
+		}
 		ui.state.room.Entities[n.ID] = *n
 		return true
 
@@ -113,11 +116,25 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 		ui.state.room.Name = n.RoomName
 		ui.state.room.Rect = n.RoomSize
 		ui.state.room.Entities = n.Entities
+		if ui.state.avatar != nil {
+			e, ok := n.Entities[ui.state.avatar.ID]
+			if ok {
+				*ui.state.avatar = e
+			}
+		}
+
 		return true
 
 	case *wire.Delta:
 		if n.RoomSize != nil {
 			ui.state.room.Rect = *n.RoomSize
+		}
+
+		if ui.state.avatar != nil {
+			id := ui.state.avatar.ID
+			if ep, ok := n.Entities[id]; ok {
+				*ui.state.avatar = *ep
+			}
 		}
 
 		if len(n.Entities) > 0 {

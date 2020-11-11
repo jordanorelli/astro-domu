@@ -36,13 +36,13 @@ func (v *gameView) walkHandler(e *tcell.EventKey) change {
 	if e.Key() == tcell.KeyRune {
 		switch e.Rune() {
 		case 'w':
-			return move{0, -1}
+			return move(math.Up)
 		case 'a':
-			return move{-1, 0}
+			return move(math.Left)
 		case 's':
-			return move{0, 1}
+			return move(math.Down)
 		case 'd':
-			return move{1, 0}
+			return move(math.Right)
 		case 'i':
 			return openInventory{}
 		case 'l':
@@ -175,13 +175,10 @@ func (v *gameView) drawHeader(img canvas, st *state) {
 
 func (v *gameView) setFocus(yes bool) { v.inFocus = yes }
 
-type move struct {
-	x int
-	y int
-}
+type move math.Vec
 
 func (m move) exec(ui *UI) {
-	go ui.client.Send(sim.Move{m.x, m.y})
+	go ui.client.Send(sim.Move(m))
 }
 
 type lookAt struct {
@@ -243,7 +240,7 @@ func (p pickup) exec(ui *UI) {
 		case *sim.Pickedup:
 			ui.misc <- func(ui *UI) {
 				ui.state.detail = textView(fmt.Sprintf("you picked up: %s", v.Name))
-				ui.state.inventory.items = append(ui.state.inventory.items, item{name: v.Name})
+				ui.state.inventory.items = append(ui.state.inventory.items, item{ID: v.ID, name: v.Name})
 			}
 		case wire.Error:
 			ui.misc <- func(ui *UI) {
@@ -252,6 +249,32 @@ func (p pickup) exec(ui *UI) {
 		default:
 			ui.misc <- func(ui *UI) {
 				ui.state.detail = textView(fmt.Sprintf("unexpected pickup response type: %T", res.Body))
+			}
+		}
+	}()
+}
+
+type putdown sim.Putdown
+
+func (p putdown) exec(ui *UI) {
+	go func() {
+		res, err := ui.client.Send(sim.Putdown(p))
+		if err != nil {
+			ui.state.detail = textView(err.Error())
+			return
+		}
+
+		switch v := res.Body.(type) {
+		case *wire.OK:
+			ui.state.inventory.removeItem(p.ID)
+
+		case wire.Error:
+			ui.misc <- func(ui *UI) {
+				ui.state.detail = textView(v.Error())
+			}
+		default:
+			ui.misc <- func(ui *UI) {
+				ui.state.detail = textView(fmt.Sprintf("unexpected putdown response type: %T", res.Body))
 			}
 		}
 	}()

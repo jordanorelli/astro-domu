@@ -32,9 +32,9 @@ func (l login) exec(ui *UI) {
 		ui.state.room = new(wire.Room)
 	}
 	p := welcome.Players[l.name]
-	// avi := p.Avatar
 	room := welcome.Rooms[p.Room]
-	// e := room.Entities[p.Avatar]
+	e := room.Entities[p.Avatar]
+	ui.state.avatar = &e
 	ui.state.room = &room
 
 	ui.root = inGameView

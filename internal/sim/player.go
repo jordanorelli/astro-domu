@@ -295,12 +295,13 @@ func (pu *Pickup) exec(w *world, r *room, pl *player, seq int) result {
 		}
 		nextTile.here = nextTile.here[0:0]
 		pl.inventory = append(pl.inventory, e)
-		return result{reply: Pickedup{Name: e.name}}
+		return result{reply: Pickedup{ID: e.ID, Name: e.name}}
 	}
 	return result{reply: wire.Errorf("nothing here")}
 }
 
 type Pickedup struct {
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 

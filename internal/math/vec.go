@@ -5,6 +5,14 @@ import (
 	"fmt"
 )
 
+var (
+	Origin = Vec{0, 0}
+	Up     = Vec{0, -1} // w
+	Left   = Vec{-1, 0} // a
+	Down   = Vec{0, 1}  // s
+	Right  = Vec{1, 0}  // d
+)
+
 type Vec struct {
 	X int
 	Y int
