@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jordanorelli/astro-domu/internal/math"
 	"github.com/jordanorelli/astro-domu/internal/wire"
+	"github.com/jordanorelli/blammo"
 )
 
 type inventory struct {
@@ -28,6 +29,7 @@ type item struct {
 }
 
 type inventoryView struct {
+	*blammo.Log
 	highlight int
 	avatar    *wire.Entity // probably but not necessarily the player avatar
 	*inventory
@@ -86,26 +88,33 @@ func (v *inventoryView) putdownHandler(e *tcell.EventKey) change {
 	key := e.Key()
 
 	if key == tcell.KeyRune {
+
+		v.Info("key %c pressed while holding %d at %v", e.Rune(), v.items[v.highlight].ID, v.avatar.Position)
+
 		switch e.Rune() {
 		case 'w':
+			v.keyHandler = v.selectHandler
 			return putdown{
 				ID:       v.items[v.highlight].ID,
 				Location: v.avatar.Position.Add(math.Up),
 			}
 		case 'a':
+			v.keyHandler = v.selectHandler
 			return putdown{
 				ID:       v.items[v.highlight].ID,
 				Location: v.avatar.Position.Add(math.Left),
 			}
 		case 's':
+			v.keyHandler = v.selectHandler
 			return putdown{
 				ID:       v.items[v.highlight].ID,
 				Location: v.avatar.Position.Add(math.Down),
 			}
 		case 'd':
+			v.keyHandler = v.selectHandler
 			return putdown{
 				ID:       v.items[v.highlight].ID,
-				Location: v.avatar.Position.Add(math.Left),
+				Location: v.avatar.Position.Add(math.Right),
 			}
 		}
 	}
@@ -150,6 +159,7 @@ type openInventory struct{}
 func (openInventory) exec(ui *UI) {
 	if ui.root == inGameView {
 		ui.state.detail = &inventoryView{
+			Log:       ui.Log.Child("inventory"),
 			avatar:    ui.state.avatar,
 			inventory: &ui.state.inventory,
 		}

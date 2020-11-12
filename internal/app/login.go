@@ -26,15 +26,16 @@ func (l login) exec(ui *UI) {
 		panic("unable to login: " + err.Error())
 	}
 	welcome := res.Body.(*wire.Welcome)
-	ui.Info("cool beans! a login response: %#v", welcome)
 	ui.state.playerName = l.name
 	if ui.state.room == nil {
 		ui.state.room = new(wire.Room)
 	}
 	p := welcome.Players[l.name]
 	room := welcome.Rooms[p.Room]
-	e := room.Entities[p.Avatar]
-	ui.state.avatar = &e
+	// e := room.Entities[p.Avatar]
+	avatar := welcome.Avatar
+	ui.state.avatar = &avatar
+	ui.Info("initial avatar: %v", avatar)
 	ui.state.room = &room
 
 	ui.root = inGameView

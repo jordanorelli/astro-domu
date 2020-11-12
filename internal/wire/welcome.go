@@ -3,6 +3,7 @@ package wire
 type Welcome struct {
 	Rooms     map[string]Room   `json:"rooms"`
 	Players   map[string]Player `json:"players"`
+	Avatar    Entity            `json:"avatar"`
 	Inventory []Entity          `json:"inventory"`
 }
 

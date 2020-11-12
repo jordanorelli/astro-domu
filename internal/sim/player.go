@@ -27,6 +27,10 @@ func (p *player) start(c chan Request, conn *websocket.Conn, r *room) {
 		Rooms:     make(map[string]wire.Room),
 		Players:   make(map[string]wire.Player),
 		Inventory: make([]wire.Entity, 0),
+		Avatar: wire.Entity{
+			ID:    p.avatar.ID,
+			Glyph: p.avatar.Glyph,
+		},
 	}
 	p.inventory = make([]*entity, 0, 16)
 	ents := make(map[int]wire.Entity)
@@ -190,13 +194,6 @@ type spawnPlayer struct{}
 
 func (s spawnPlayer) exec(w *world, r *room, p *player, seq int) result {
 	p.fullSync = true
-	e := entity{
-		ID:       <-w.nextID,
-		Glyph:    '@',
-		solid:    true,
-		behavior: p,
-	}
-	p.avatar = &e
 
 	p.inventory = append(p.inventory, &entity{
 		ID:          <-w.nextID,
@@ -210,10 +207,10 @@ func (s spawnPlayer) exec(w *world, r *room, p *player, seq int) result {
 
 	for n, _ := range r.tiles {
 		t := &r.tiles[n]
-		x, y := n%r.Width, n/r.Width
-		e.Position = math.Vec{x, y}
-		if t.addEntity(&e) {
-			p.Info("player added to tile at %s", e.Position)
+		pos := math.Vec{n % r.Width, n / r.Width}
+		p.avatar.Position = pos
+		if t.addEntity(p.avatar) {
+			p.Info("player added to tile at %s", pos)
 			return result{}
 		}
 	}
@@ -336,7 +333,10 @@ func (pd *Putdown) exec(w *world, r *room, pl *player, seq int) result {
 		}
 	}
 
-	nextTile.addEntity(pl.removeItem(pd.ID))
+	item = pl.removeItem(pd.ID)
+	item.Position = pd.Location
+	nextTile.addEntity(item)
+
 	return result{reply: wire.OK{}}
 }
 

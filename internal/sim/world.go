@@ -236,9 +236,14 @@ func (w *world) register(c connect) {
 		outbox: make(chan wire.Response, 8),
 		pending: &Request{
 			From:  c.login.Name,
-			Seq:   90,
 			Wants: &spawnPlayer{},
 		},
+	}
+	p.avatar = &entity{
+		ID:       <-w.nextID,
+		Glyph:    '@',
+		solid:    true,
+		behavior: &p,
 	}
 	r.players[c.login.Name] = &p
 	w.players[c.login.Name] = &p

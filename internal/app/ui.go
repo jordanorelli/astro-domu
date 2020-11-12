@@ -133,6 +133,7 @@ func (ui *UI) handleNotification(v wire.Value) bool {
 		if ui.state.avatar != nil {
 			id := ui.state.avatar.ID
 			if ep, ok := n.Entities[id]; ok {
+				ui.Info("our position moved to: %v", ep.Position)
 				*ui.state.avatar = *ep
 			}
 		}
